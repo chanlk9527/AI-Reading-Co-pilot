@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Reading Coach: Socratic Edition</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+
+    <!-- Top Right Floating Controls -->
+    <div class="floating-controls">
+        <div class="control-blur-bg"></div>
+
+        <!-- Collapsed View (Visible by default) -->
+        <div class="control-collapsed-view">
+            <span id="collapsedLabel">Flow • Lv3</span>
+        </div>
+
+        <!-- Expanded View (Visible on hover) -->
+        <div class="control-expanded-content">
+            <div class="control-inner">
+                <div class="mode-switcher compact">
+                    <button class="mode-btn active" onclick="switchMode('flow')" id="btn-flow">
+                        ☕️ Flow
+                    </button>
+                    <button class="mode-btn" onclick="switchMode('learn')" id="btn-learn">
+                        🎓 Learn
+                    </button>
+                </div>
+
+                <div class="level-capsule small" id="levelCapsule" data-active="3">
+                    <div class="capsule-indicator"></div>
+                    <!-- Shortened labels for compact view -->
+                    <button class="capsule-btn" onclick="changeLevel(1)">1</button>
+                    <button class="capsule-btn" onclick="changeLevel(2)">2</button>
+                    <button class="capsule-btn active-text" onclick="changeLevel(3)">3</button>
+                    <button class="capsule-btn" onclick="changeLevel(4)">4</button>
+                    <button class="capsule-btn" onclick="changeLevel(5)">5</button>
+                </div>
+
+                <!-- New Vocab Level Selector -->
+                <div class="vocab-selector-row"
+                    style="margin-left: 10px; display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 11px; opacity: 0.6; font-weight: 500;">VOCAB</span>
+                    <select id="vocabSelect" onchange="changeVocabLevel(this.value)"
+                        style="background: rgba(0,0,0,0.05); color: #2C3E50; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 4px 2px; font-size: 12px; font-weight: 600; cursor: pointer; outline: none;">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1" selected>B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="level-info" id="levelDesc" style="text-align: right; padding-right: 5px;">Intermediate</div>
+        </div>
+    </div>
+
+    <!-- Main Reader Panel (Flex Item 1) -->
+    <div class="reader-panel" id="readerPanel">
+        <div class="reader-content">
+            <div class="focus-marker" id="focusMarker"></div>
+            <!-- ... Content ... -->
+            <div class="book-title">Pride and Prejudice</div>
+
+            <div class="paragraph" data-id="p1">
+                <div class="para-text">
+                    It is a truth <span class="smart-word" data-key="universally">universally</span> acknowledged, that
+                    a single man in <span class="smart-word" data-key="possession">possession</span> of a good <span
+                        class="smart-word" data-key="fortune">fortune</span>, must be in want of a wife.
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p1')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p1">
+                    凡是有钱的单身汉，总想娶位太太，这已经成了一条举世公认的真理。
+                </div>
+            </div>
+
+            <div class="paragraph" data-id="p2">
+                <div class="para-text">
+                    However little known the feelings or views of such a man may be on his first <span
+                        class="smart-word" data-key="entering">entering</span> a neighbourhood, this truth is so well
+                    <span class="smart-word" data-key="fixed">fixed</span> in the minds of the surrounding <span
+                        class="smart-word" data-key="families">families</span>, that he is considered the rightful <span
+                        class="smart-word" data-key="property">property</span> of some one or other of their daughters.
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p2')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p2">
+                    虽然这人初来乍到，谁都不了解他的性情见解，但这真理早已在邻居心目中根深蒂固，认为他理所应当时某家女儿的财产。
+                </div>
+            </div>
+
+            <div class="paragraph" data-id="p3">
+                <div class="para-text">
+                    "My dear Mr. Bennet," said his lady to him one day, "have you heard that <span class="smart-word"
+                        data-key="netherfield">Netherfield Park</span> is let at last?"
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p3')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p3">
+                    “亲爱的贝内特先生，”有一天他太太对他说，“你听说内瑟菲尔德庄园终于租出去了吗？”
+                </div>
+            </div>
+
+            <div style="height: 60vh;"></div>
+        </div>
+    </div>
+
+    <!-- Side Panel (Flex Item 2, hidden in Flow Mode) -->
+    <div class="copilot-panel" id="copilotPanel">
+        <!-- Control header removed from here -->
+
+        <div class="dashboard-content" id="dashboard">
+            <!-- Content Injected by JS -->
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

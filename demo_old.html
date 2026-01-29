@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Reading Coach: Socratic Edition</title>
+    <style>
+        :root {
+            --bg-body: #F2F4F7; /* 更沉浸的灰 */
+            --bg-paper: #FFFFFF;
+            --text-main: #2C3E50;
+            --text-secondary: #95A5A6;
+            --accent-gold: #D4AF37;
+            --accent-action: #5D3FD3; /* 交互色：皇家紫 */
+
+            --lv-easy: #27AE60;
+            --lv-mid: #2980B9;
+            --lv-hard: #C0392B;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ================= 左侧阅读区 ================= */
+        .reader-panel {
+            flex: 6;
+            background-color: var(--bg-paper);
+            height: 100%;
+            overflow-y: auto;
+            position: relative;
+            padding: 0 80px; /* 留足空间给光标 */
+            scroll-behavior: smooth;
+        }
+
+        .reader-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-top: 100px;
+            padding-bottom: 300px;
+            position: relative; /* 关键：作为光标的定位父级 */
+        }
+
+        /* --- 修复并增强：磁吸光标 --- */
+        .focus-marker {
+            position: absolute;
+            left: -40px; /* 调整左侧距离 */
+            width: 4px;
+            background-color: var(--accent-gold);
+            border-radius: 4px;
+            transition: top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s ease, opacity 0.3s ease;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            opacity: 0; /* 初始隐藏 */
+            z-index: 100;
+        }
+
+        /* 光标呼吸动画 */
+        .focus-marker.active {
+            opacity: 1;
+            animation: pulse-gold 2s infinite;
+        }
+
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+        }
+
+        .book-title {
+            font-family: "Georgia", serif;
+            font-size: 2.8rem;
+            color: var(--text-main);
+            margin-bottom: 3rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        /* 段落容器 */
+        .paragraph {
+            margin-bottom: 2.5rem;
+            position: relative;
+            transition: opacity 0.4s;
+            padding: 10px 15px; /* 增加一点内边距让光标定位更舒服 */
+            border-radius: 8px;
+        }
+
+        .paragraph:hover {
+            background-color: rgba(0,0,0,0.01);
+        }
+
+        /* 英文正文区 */
+        .para-text {
+            font-family: "Georgia", serif;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #4A4A4A;
+            transition: color 0.3s;
+        }
+
+        .paragraph.active .para-text {
+            color: #000;
+        }
+
+        /* Lv5 模糊模式 (Cloze Mode) */
+        .blur-word {
+            filter: blur(5px);
+            background: #eee;
+            transition: all 0.3s ease;
+            cursor: help;
+        }
+        .blur-word:hover {
+            filter: blur(0);
+            background: transparent;
+        }
+
+        /* --- 行间翻译区 --- */
+        .inline-trans {
+            margin-top: 12px;
+            font-family: -apple-system, "PingFang SC", sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #555;
+            background: #F8F9FA;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 8px;
+            border-left: 3px solid var(--accent-gold);
+            display: none;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+
+        .inline-trans.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .trans-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: #EEE;
+            color: #999;
+            font-size: 0.6rem;
+            margin-left: 6px;
+            cursor: pointer;
+            vertical-align: super;
+            transition: all 0.2s;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .paragraph:hover .trans-toggle, .paragraph.active .trans-toggle {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .trans-toggle:hover { background: var(--accent-gold); color: white; }
+
+        /* --- 单词高亮 --- */
+        .smart-word {
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        /* 仅在卡片激活或悬停时显示下划线 */
+        .smart-word.has-card {
+            border-bottom: 2px dotted #CCC;
+        }
+        .smart-word.has-card:hover, .smart-word.highlighted {
+            background-color: rgba(212, 175, 55, 0.2); /* 金色高亮 */
+            border-bottom-color: var(--accent-gold);
+            color: black;
+        }
+
+        /* ================= 右侧 Dashboard ================= */
+        .copilot-panel {
+            flex: 4;
+            background-color: #F7F9FC;
+            border-left: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.02);
+        }
+
+        /* 控制器区域 */
+        .control-header {
+            padding: 30px;
+            background: #FFF;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #EEE;
+        }
+
+        .level-capsule {
+            background: #F0F2F5;
+            border-radius: 12px;
+            padding: 4px;
+            display: flex;
+            position: relative;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .capsule-indicator {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 4px;
+            width: calc(20% - 5px);
+            background: #FFF;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            z-index: 1;
+        }
+
+        .capsule-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #95A5A6;
+            cursor: pointer;
+            z-index: 2;
+            position: relative;
+            padding: 10px 0;
+            transition: color 0.3s;
+        }
+
+        .level-capsule[data-active="1"] .capsule-indicator { transform: translateX(0%); border-top: 2px solid var(--lv-easy); }
+        .level-capsule[data-active="2"] .capsule-indicator { transform: translateX(100%); border-top: 2px solid var(--lv-easy); }
+        .level-capsule[data-active="3"] .capsule-indicator { transform: translateX(200%); border-top: 2px solid var(--lv-mid); }
+        .level-capsule[data-active="4"] .capsule-indicator { transform: translateX(300%); border-top: 2px solid var(--lv-hard); }
+        .level-capsule[data-active="5"] .capsule-indicator { transform: translateX(400%); border-top: 2px solid var(--lv-hard); }
+
+        .level-capsule button.active-text { color: #2C3E50; }
+
+        .level-info {
+            font-size: 0.75rem;
+            color: #AAA;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* 仪表盘内容区 */
+        .dashboard-content {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .module-card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .module-header {
+            padding: 12px 16px;
+            background: linear-gradient(to right, #FAFBFC, #FFF);
+            border-bottom: 1px solid #F0F0F0;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #B0B0B0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 核心知识卡片 (Socratic Style) */
+        .knowledge-item {
+            padding: 16px;
+            border-bottom: 1px dashed #EEE;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .knowledge-item:hover { background: #FAFAFA; }
+        .knowledge-item:last-child { border-bottom: none; }
+
+        /* 未揭示状态 (Guess Mode) */
+        .k-guess-mode .k-def, .k-guess-mode .k-context { display: none; }
+        .k-guess-mode .k-clue { display: block; }
+        .k-guess-mode::after {
+            content: "Tap to Reveal";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+            color: var(--accent-action);
+            background: rgba(93, 63, 211, 0.1);
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        /* 揭示状态 */
+        .k-reveal-mode .k-clue { display: none; }
+        .k-reveal-mode .k-def, .k-reveal-mode .k-context { display: block; animation: fadeIn 0.3s; }
+
+        .k-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+        .k-word { font-size: 1.15rem; font-weight: 700; color: #2C3E50; }
+        .k-ipa { font-size: 0.85rem; color: #999; font-family: "Lucida Sans Unicode", sans-serif; }
+
+        .k-clue {
+            display: none;
+            font-style: italic;
+            color: #666;
+            font-size: 0.9rem;
+            border-left: 2px solid var(--accent-action);
+            padding-left: 8px;
+            margin-top: 5px;
+        }
+        .k-clue::before { content: "🤔 Hint: "; font-style: normal; font-weight: bold; }
+
+        .k-def { font-size: 0.95rem; color: #333; font-weight: 500; margin-bottom: 4px;}
+        .k-context { font-size: 0.85rem; color: #7F8C8D; background: #F2F4F7; padding: 8px; border-radius: 6px; }
+
+        /* Insight */
+        .insight-body { padding: 16px; font-size: 0.95rem; line-height: 1.6; color: #555; }
+        .insight-tag {
+            display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-bottom: 8px; color: white; background: #2C3E50;
+        }
+
+        /* Debate Button */
+        .btn-debate {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #EEE;
+            background: #FFF;
+            color: var(--accent-action);
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-debate:hover { border-color: var(--accent-action); background: rgba(93, 63, 211, 0.05); }
+
+        /* 动画 */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+<div class="reader-panel" id="readerPanel">
+    <div class="reader-content">
+        <div class="focus-marker" id="focusMarker"></div>
+
+        <div class="book-title">Pride and Prejudice</div>
+
+        <div class="paragraph" data-id="p1">
+            <div class="para-text">
+                It is a truth <span class="smart-word" data-key="universally">universally</span> acknowledged, that a single man in <span class="smart-word" data-key="possession">possession</span> of a good <span class="smart-word" data-key="fortune">fortune</span>, must be in want of a wife.
+                <span class="trans-toggle" onclick="toggleTrans(event, 'p1')">🇨🇳</span>
+            </div>
+            <div class="inline-trans" id="trans-p1">
+                凡是有钱的单身汉，总想娶位太太，这已经成了一条举世公认的真理。
+            </div>
+        </div>
+
+        <div class="paragraph" data-id="p2">
+            <div class="para-text">
+                However little known the feelings or views of such a man may be on his first <span class="smart-word" data-key="entering">entering</span> a neighbourhood, this truth is so well <span class="smart-word" data-key="fixed">fixed</span> in the minds of the surrounding <span class="smart-word" data-key="families">families</span>, that he is considered the rightful <span class="smart-word" data-key="property">property</span> of some one or other of their daughters.
+                <span class="trans-toggle" onclick="toggleTrans(event, 'p2')">🇨🇳</span>
+            </div>
+            <div class="inline-trans" id="trans-p2">
+                虽然这人初来乍到，谁都不了解他的性情见解，但这真理早已在邻居心目中根深蒂固，认为他理所应当时某家女儿的财产。
+            </div>
+        </div>
+
+        <div class="paragraph" data-id="p3">
+            <div class="para-text">
+                "My dear Mr. Bennet," said his lady to him one day, "have you heard that <span class="smart-word" data-key="netherfield">Netherfield Park</span> is let at last?"
+                <span class="trans-toggle" onclick="toggleTrans(event, 'p3')">🇨🇳</span>
+            </div>
+            <div class="inline-trans" id="trans-p3">
+                “亲爱的贝内特先生，”有一天他太太对他说，“你听说内瑟菲尔德庄园终于租出去了吗？”
+            </div>
+        </div>
+
+        <div style="height: 60vh;"></div> </div>
+</div>
+
+<div class="copilot-panel">
+    <div class="control-header">
+        <div class="level-capsule" id="levelCapsule" data-active="3">
+            <div class="capsule-indicator"></div>
+            <button class="capsule-btn" onclick="changeLevel(1)">Lv 1</button>
+            <button class="capsule-btn" onclick="changeLevel(2)">Lv 2</button>
+            <button class="capsule-btn active-text" onclick="changeLevel(3)">Lv 3</button>
+            <button class="capsule-btn" onclick="changeLevel(4)">Lv 4</button>
+            <button class="capsule-btn" onclick="changeLevel(5)">Lv 5</button>
+        </div>
+        <div class="level-info" id="levelDesc">Intermediate: Socratic Mode Active</div>
+    </div>
+
+    <div class="dashboard-content" id="dashboard">
+        <div style="margin-top: 150px; text-align:center; color:#CCC;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">👋</div>
+            Scroll to start reading<br>
+            <span style="font-size:0.8rem">AI Coach is ready</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 数据结构 (新增 clue 字段用于苏格拉底提示) ---
+    const bookData = {
+        "p1": {
+            knowledge: [
+                { key: "universally", diff: 2, word: "Universally", ipa: "/ˌjuː.nɪˈvɜː.səl.i/", def: "普遍地；人人皆知地", context: "Universal truth = 普世真理", clue: "Synonym: Widely, Generally" },
+                { key: "possession", diff: 3, word: "Possession", ipa: "/pəˈzeʃ.ən/", def: "拥有；财产", context: "In possession of = Owning something", clue: "Think of 'Possess' or 'Ownership'" },
+                { key: "fortune", diff: 1, word: "Fortune", ipa: "/ˈfɔː.tʃuːn/", def: "大笔财产", context: "A man of fortune = Rich man", clue: "Great wealth / Luck" },
+                { key: "syntax_1", type: "syntax", diff: 4, word: "Formal Subject", ipa: "Syntax", def: "It is... that...", context: "形式主语结构。真正的主语是后面的 that 从句。", clue: "The word 'It' is just a placeholder here." }
+            ],
+            insight: {
+                tag: "Irony (反讽)",
+                text: "Austen starts with a famous ironic statement. She says it's a 'truth', but she's mocking how society forces rich men to marry."
+            }
+        },
+        "p2": {
+            knowledge: [
+                { key: "entering", diff: 2, word: "Entering", ipa: "/ˈen.tər.ɪŋ/", def: "进入；搬入", context: "Moving into a new place", clue: "Coming in" },
+                { key: "fixed", diff: 3, word: "Fixed", ipa: "/fɪkst/", def: "根深蒂固的；确定的", context: "Fixed in the minds = Firmly believed", clue: "Synonym: Established, Rooted" },
+                { key: "property", diff: 3, word: "Property", ipa: "/ˈprɒp.ə.ti/", def: "财产；所有物", context: "Rightful property = object to be owned", clue: "Something that belongs to someone" }
+            ],
+            insight: {
+                tag: "Social Critique",
+                text: "Notice the word 'Property'. Austen is criticizing how men were seen as objects to be 'acquired' by families for survival."
+            }
+        },
+        "p3": {
+            knowledge: [
+                { key: "netherfield", type: "culture", diff: 3, word: "Netherfield Park", ipa: "Place", def: "内瑟菲尔德庄园", context: "Fictional estate name", clue: "Name of the large house nearby" }
+            ],
+            insight: {
+                tag: "Character Voice",
+                text: "Mrs. Bennet's voice is immediate and urgent. She doesn't say 'Hello', she jumps straight to the gossip."
+            }
+        }
+    };
+
+    // --- 2. 状态管理 ---
+    let state = {
+        level: 3,
+        activeId: null,
+        revealedKeys: [] // 记录哪些卡片已经被用户翻开了
+    };
+
+    const levelDescs = [
+        "Novice: Full Translation",
+        "Beginner: Basic Vocab",
+        "Intermediate: Socratic Hints (Guessing Mode)",
+        "Advanced: Hard Words Only",
+        "Expert: Cloze Test (Blur Mode)"
+    ];
+
+    // --- 3. 核心逻辑 ---
+
+    function changeLevel(lv) {
+        state.level = lv;
+        document.getElementById('levelCapsule').setAttribute('data-active', lv);
+        document.getElementById('levelDesc').innerText = levelDescs[lv-1];
+
+        // 更新按钮文字颜色
+        document.querySelectorAll('.capsule-btn').forEach((btn, idx) => {
+            if(idx + 1 === lv) btn.classList.add('active-text');
+            else btn.classList.remove('active-text');
+        });
+
+        // 1. 翻译控制
+        const allTrans = document.querySelectorAll('.inline-trans');
+        const allToggles = document.querySelectorAll('.trans-toggle');
+        if (lv === 1) {
+            allTrans.forEach(el => el.classList.add('show'));
+            allToggles.forEach(el => el.style.opacity = '1');
+        } else {
+            allTrans.forEach(el => el.classList.remove('show'));
+            // 恢复 toggle 按钮默认状态（hover显示）
+            allToggles.forEach(el => el.style.opacity = '');
+        }
+
+        // 2. 完形填空模式 (Lv 5)
+        const allWords = document.querySelectorAll('.smart-word');
+        if (lv === 5) {
+            allWords.forEach(span => span.classList.add('blur-word'));
+        } else {
+            allWords.forEach(span => span.classList.remove('blur-word'));
+        }
+
+        // 3. 刷新界面
+        if (state.activeId) {
+            renderDashboard(state.activeId);
+            syncHighlightsInText(state.activeId);
+            setTimeout(updateMarkerPosition, 300);
+        }
+    }
+
+    // 更新光标位置 (核心修复)
+    function updateMarkerPosition() {
+        if (!state.activeId) return;
+        const p = document.querySelector(`.paragraph[data-id="${state.activeId}"]`);
+        const marker = document.getElementById('focusMarker');
+
+        if (p && marker) {
+            // 计算位置：相对于 reader-content
+            marker.style.top = p.offsetTop + 'px';
+            marker.style.height = p.offsetHeight + 'px';
+            marker.style.opacity = '1';
+            marker.classList.add('active'); // 激活呼吸动画
+        }
+    }
+
+    // 渲染 Dashboard (Socratic Logic)
+    function renderDashboard(id) {
+        const data = bookData[id];
+        if (!data) return;
+        const dashboard = document.getElementById('dashboard');
+
+        // 过滤知识点
+        const activePoints = data.knowledge.filter(k => k.diff >= state.level || (state.level === 5 && k.diff >= 3));
+
+        let html = '';
+
+        // 1. Knowledge Cards
+        if (activePoints.length > 0) {
+            let cardsHtml = activePoints.map(k => {
+                // 判断是否处于“猜词模式” (Lv 3/4 且 未揭示)
+                const isGuessMode = (state.level === 3 || state.level === 4) && !state.revealedKeys.includes(k.key);
+                const modeClass = isGuessMode ? 'k-guess-mode' : 'k-reveal-mode';
+
+                return `
+                    <div class="knowledge-item ${modeClass}" onclick="revealCard(this, '${k.key}')" onmouseenter="highlightWord('${k.key}')" onmouseleave="unhighlightWord('${k.key}')">
+                        <div class="k-top">
+                            <span class="k-word">${k.word}</span>
+                            <span class="k-ipa">${k.ipa}</span>
+                        </div>
+
+                        <div class="k-clue">${k.clue}</div>
+
+                        <div class="k-def">${k.def}</div>
+                        <div class="k-context">${k.context}</div>
+                    </div>
+                `;
+            }).join('');
+
+            html += `
+                <div class="module-card">
+                    <div class="module-header"><span>🧠 Knowledge Scaffolding</span> <span>${activePoints.length}</span></div>
+                    <div>${cardsHtml}</div>
+                </div>
+            `;
+        }
+
+        // 2. Insight Card
+        html += `
+            <div class="module-card">
+                <div class="module-header">💡 AI Coach Insight</div>
+                <div class="insight-body">
+                    <span class="insight-tag">${data.insight.tag}</span><br>
+                    ${data.insight.text}
+                    <button class="btn-debate" onclick="triggerDebate()">
+                        🗣️ Debate with Author
+                    </button>
+                </div>
+            </div>
+        `;
+
+        dashboard.innerHTML = html;
+    }
+
+    // 翻开卡片
+    window.revealCard = function(el, key) {
+        if (!state.revealedKeys.includes(key)) {
+            state.revealedKeys.push(key);
+            el.classList.remove('k-guess-mode');
+            el.classList.add('k-reveal-mode');
+        }
+    }
+
+    // 模拟辩论
+    window.triggerDebate = function() {
+        alert("🎤 Mic ON: Try saying 'I disagree, Jane! Money isn't everything!'\n\n(This would trigger the Voice Debate module)");
+    }
+
+    // --- 文本高亮联动 ---
+    function syncHighlightsInText(id) {
+        const data = bookData[id];
+        const para = document.querySelector(`.paragraph[data-id="${id}"]`);
+
+        // 清除旧高亮
+        document.querySelectorAll('.smart-word').forEach(s => s.classList.remove('has-card'));
+
+        // 添加新高亮
+        const activePoints = data.knowledge.filter(k => k.diff >= state.level || (state.level === 5 && k.diff >= 3));
+        activePoints.forEach(k => {
+            const span = para.querySelector(`.smart-word[data-key="${k.key}"]`);
+            if (span) span.classList.add('has-card');
+        });
+    }
+
+    window.highlightWord = function(key) {
+        const span = document.querySelector(`.paragraph.active .smart-word[data-key="${key}"]`);
+        if (span) span.classList.add('highlighted');
+    }
+    window.unhighlightWord = function(key) {
+        const span = document.querySelector(`.paragraph.active .smart-word[data-key="${key}"]`);
+        if (span) span.classList.remove('highlighted');
+    }
+
+    // 翻译开关
+    window.toggleTrans = function(e, id) {
+        e.stopPropagation();
+        const transEl = document.getElementById('trans-' + id);
+        transEl.classList.toggle('show');
+        setTimeout(updateMarkerPosition, 300); // 重新计算光标
+    }
+
+    // --- 滚动监听 ---
+    const readerPanel = document.getElementById('readerPanel');
+    const paragraphs = document.querySelectorAll('.paragraph');
+
+    readerPanel.addEventListener('scroll', () => {
+        const checkPoint = window.innerHeight * 0.35; // 视口 35% 处为阅读焦点
+        let activeEl = null;
+
+        paragraphs.forEach(p => {
+            const rect = p.getBoundingClientRect();
+            if (rect.top <= checkPoint && rect.bottom >= checkPoint) {
+                activeEl = p;
+            }
+        });
+
+        if (activeEl && activeEl.getAttribute('data-id') !== state.activeId) {
+            activateParagraph(activeEl.getAttribute('data-id'));
+        }
+
+        // 实时修正光标位置 (防止快速滚动时错位)
+        if(state.activeId) updateMarkerPosition();
+    });
+
+    function activateParagraph(id) {
+        state.activeId = id;
+        paragraphs.forEach(p => p.classList.remove('active'));
+        document.querySelector(`.paragraph[data-id="${id}"]`).classList.add('active');
+
+        renderDashboard(id);
+        syncHighlightsInText(id);
+        updateMarkerPosition();
+    }
+
+    // 初始化
+    window.onload = () => {
+        activateParagraph('p1');
+    };
+
+    // 窗口大小改变时重算
+    window.onresize = updateMarkerPosition;
+
+</script>
+</body>
+</html>

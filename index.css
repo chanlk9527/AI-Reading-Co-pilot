@@ -1,0 +1,748 @@
+:root {
+    --bg-body: #F2F4F7;
+    --bg-paper: #FFFFFF;
+    --text-main: #2C3E50;
+    --text-secondary: #95A5A6;
+
+    /* Default Theme (will be overridden by JS) */
+    --theme-primary: #00B894;
+    --theme-bg-light: #F0FDF4;
+    --highlight-color: rgba(0, 184, 148, 0.2);
+
+    --accent-gold: #D4AF37;
+    --accent-action: #5D3FD3;
+
+    --lv-easy: #27AE60;
+    --lv-mid: #2980B9;
+    --lv-hard: #C0392B;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-body);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    transition: background-color 0.5s ease;
+}
+
+/* --- Theme Classes --- */
+body.mode-flow {
+    --theme-primary: #00B894;
+    /* Emerald Green */
+    --theme-bg-light: #F0FDF4;
+    --highlight-color: rgba(0, 184, 148, 0);
+    /* Invisible highlight base */
+}
+
+body.mode-learn {
+    --theme-primary: #2980B9;
+    /* Royal Blue */
+    --theme-bg-light: #EAF2F8;
+    --highlight-color: rgba(41, 128, 185, 0.15);
+}
+
+/* Mode Switcher Styles */
+.mode-switcher {
+    display: flex;
+    background: #F0F2F5;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.mode-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 8px;
+    color: #95A5A6;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.mode-btn.active {
+    background: #FFF;
+    color: var(--theme-primary);
+    /* Uses current theme color */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* ================= Floating Controls (New) ================= */
+/* ================= Floating Controls (Autohide) ================= */
+.floating-controls {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    /* Wrapper handles hover area */
+    padding: 10px;
+    margin: -10px;
+    /* Offset padding to keep position but increase hit area */
+    transition: all 0.3s ease;
+}
+
+/* --- Collapsed State (Default) --- */
+.control-collapsed-view {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top right;
+    white-space: nowrap;
+}
+
+.control-collapsed-view::before {
+    content: "⚙️";
+    font-size: 1rem;
+}
+
+.floating-controls:hover .control-collapsed-view {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+    pointer-events: none;
+    position: absolute;
+    /* Take out of flow */
+    top: 10px;
+    right: 10px;
+}
+
+/* --- Expanded State (Hover) --- */
+.control-expanded-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute;
+    /* Overlay on top of collapsed */
+    top: 10px;
+    right: 10px;
+}
+
+.floating-controls:hover .control-expanded-content {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    position: relative;
+    /* Return to flow */
+    top: 0;
+    right: 0;
+}
+
+.control-inner {
+    display: flex;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 8px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.mode-switcher.compact {
+    margin: 0;
+    width: auto;
+    background: #F0F2F5;
+    padding: 3px;
+    border-radius: 10px;
+}
+
+.mode-switcher.compact .mode-btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+.level-capsule.small {
+    width: 200px;
+    /* Smaller width */
+}
+
+/* ================= Dynamic Layout ================= */
+
+/* Initial State: Flow Mode (Full Screen) */
+.reader-panel {
+    flex: 1;
+    /* Take full width */
+    background-color: var(--bg-paper);
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
+    padding: 0 80px;
+    scroll-behavior: smooth;
+    transition: flex 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Smooth resize */
+}
+
+.copilot-panel {
+    width: 0;
+    flex: 0;
+    /* Shut completely */
+    overflow: hidden;
+    background-color: #F7F9FC;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.02);
+    transition: flex 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+    opacity: 0;
+}
+
+/* Learn Mode State (Split Screen) */
+body.mode-learn .reader-panel {
+    flex: 6;
+    /* Returns to 60% */
+}
+
+body.mode-learn .copilot-panel {
+    flex: 4;
+    /* Returns to 40% */
+    opacity: 1;
+}
+
+/* Adjust reader content margin for centering */
+.reader-content {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 100px;
+    padding-bottom: 300px;
+    position: relative;
+    transition: margin 0.6s ease;
+}
+
+/* In Flow mode, ensure it stays centered visually nicely */
+body.mode-flow .reader-content {
+    margin: 0 auto;
+}
+
+/* ================= 左侧阅读区 (Old overrides) ================= */
+/* We keep .reader-content styles above, but some old styles might need cleanup if they conflict. */
+/* Just ensuring current reader-content styles don't conflict. */
+
+/* --- 修复并增强：磁吸光标 --- */
+.focus-marker {
+    position: absolute;
+    left: -40px;
+    /* 调整左侧距离 */
+    width: 4px;
+    background-color: var(--accent-gold);
+    border-radius: 4px;
+    transition: top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+    opacity: 0;
+    /* 初始隐藏 */
+    z-index: 100;
+}
+
+/* 光标呼吸动画 */
+.focus-marker.active {
+    opacity: 1;
+    animation: pulse-gold 2s infinite;
+}
+
+@keyframes pulse-gold {
+    0% {
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+    }
+}
+
+.book-title {
+    font-family: "Georgia", serif;
+    font-size: 2.8rem;
+    color: var(--text-main);
+    margin-bottom: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+/* 段落容器 */
+.paragraph {
+    margin-bottom: 2.5rem;
+    position: relative;
+    transition: opacity 0.4s;
+    padding: 10px 15px;
+    /* 增加一点内边距让光标定位更舒服 */
+    border-radius: 8px;
+}
+
+.paragraph:hover {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+/* 英文正文区 */
+.para-text {
+    font-family: "Georgia", serif;
+    font-size: 1.4rem;
+    line-height: 1.8;
+    color: #4A4A4A;
+    transition: color 0.3s;
+}
+
+.paragraph.active .para-text {
+    color: #000;
+}
+
+/* Lv5 模糊模式 (Cloze Mode) */
+.blur-word {
+    filter: blur(5px);
+    background: #eee;
+    transition: all 0.3s ease;
+    cursor: help;
+}
+
+.blur-word:hover {
+    filter: blur(0);
+    background: transparent;
+}
+
+/* --- 行间翻译区 --- */
+.inline-trans {
+    margin-top: 12px;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #555;
+    background: #F8F9FA;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 8px;
+    border-left: 3px solid var(--accent-gold);
+    display: none;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+}
+
+.inline-trans.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.trans-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: #EEE;
+    color: #999;
+    font-size: 0.6rem;
+    margin-left: 6px;
+    cursor: pointer;
+    vertical-align: super;
+    transition: all 0.2s;
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+.paragraph:hover .trans-toggle,
+.paragraph.active .trans-toggle {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.trans-toggle:hover {
+    background: var(--accent-gold);
+    color: white;
+}
+
+/* --- 单词高亮 & 交互 --- */
+.smart-word {
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+/* Flow Mode Styles: Subtle Underline */
+body.mode-flow .smart-word.has-card {
+    border-bottom: 2px solid rgba(0, 184, 148, 0.3);
+    /* Faint green underline */
+}
+
+body.mode-flow .smart-word.has-card:hover {
+    background-color: rgba(0, 184, 148, 0.1);
+}
+
+/* Learn Mode Styles: Background Highlight */
+body.mode-learn .smart-word.has-card {
+    background-color: var(--highlight-color);
+    border-bottom: 2px solid transparent;
+}
+
+body.mode-learn .smart-word.has-card:hover,
+body.mode-learn .smart-word.highlighted {
+    background-color: rgba(41, 128, 185, 0.3);
+    border-bottom-color: var(--theme-primary);
+    color: #000;
+}
+
+/* Instant Peek Tooltip (Flow Mode Only) */
+.peek-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 1000;
+}
+
+body.mode-flow .smart-word:hover .peek-tooltip {
+    opacity: 1;
+}
+
+/* Ambient Context Card (Flow Mode Dashboard) */
+.ambient-card {
+    background: #FFF;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.5s;
+}
+
+.ambient-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+.ambient-info {
+    padding: 15px;
+}
+
+.ambient-title {
+    font-weight: 700;
+    color: #2D3436;
+    margin-bottom: 5px;
+}
+
+.ambient-desc {
+    font-size: 0.85rem;
+    color: #636E72;
+    line-height: 1.5;
+}
+
+/* ================= 右侧 Dashboard ================= */
+/* .copilot-panel styles merged into Dynamic Layout section above */
+
+/* 控制器区域 */
+/* Old Control Header Removed - functionality moved to floating controls */
+.control-header {
+    display: none;
+}
+
+.level-capsule {
+    background: #F0F2F5;
+    border-radius: 12px;
+    padding: 4px;
+    display: flex;
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+}
+
+.capsule-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(20% - 5px);
+    background: #FFF;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index: 1;
+}
+
+.capsule-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #95A5A6;
+    cursor: pointer;
+    z-index: 2;
+    position: relative;
+    padding: 10px 0;
+    transition: color 0.3s;
+}
+
+.level-capsule[data-active="1"] .capsule-indicator {
+    transform: translateX(0%);
+    border-top: 2px solid var(--lv-easy);
+}
+
+.level-capsule[data-active="2"] .capsule-indicator {
+    transform: translateX(100%);
+    border-top: 2px solid var(--lv-easy);
+}
+
+.level-capsule[data-active="3"] .capsule-indicator {
+    transform: translateX(200%);
+    border-top: 2px solid var(--lv-mid);
+}
+
+.level-capsule[data-active="4"] .capsule-indicator {
+    transform: translateX(300%);
+    border-top: 2px solid var(--lv-hard);
+}
+
+.level-capsule[data-active="5"] .capsule-indicator {
+    transform: translateX(400%);
+    border-top: 2px solid var(--lv-hard);
+}
+
+.level-capsule button.active-text {
+    color: #2C3E50;
+}
+
+.level-info {
+    font-size: 0.75rem;
+    color: #AAA;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+/* 仪表盘内容区 */
+.dashboard-content {
+    flex: 1;
+    padding: 20px 30px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.module-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.module-header {
+    padding: 12px 16px;
+    background: linear-gradient(to right, #FAFBFC, #FFF);
+    border-bottom: 1px solid #F0F0F0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #B0B0B0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 核心知识卡片 (Socratic Style) */
+.knowledge-item {
+    padding: 16px;
+    border-bottom: 1px dashed #EEE;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.knowledge-item:hover {
+    background: #FAFAFA;
+}
+
+.knowledge-item:last-child {
+    border-bottom: none;
+}
+
+/* 未揭示状态 (Guess Mode) */
+.k-guess-mode .k-def,
+.k-guess-mode .k-context {
+    display: none;
+}
+
+.k-guess-mode .k-clue {
+    display: block;
+}
+
+.k-guess-mode::after {
+    content: "Tap to Reveal";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--accent-action);
+    background: rgba(93, 63, 211, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+/* 揭示状态 */
+.k-reveal-mode .k-clue {
+    display: none;
+}
+
+.k-reveal-mode .k-def,
+.k-reveal-mode .k-context {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+.k-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.k-word {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #2C3E50;
+}
+
+.k-ipa {
+    font-size: 0.85rem;
+    color: #999;
+    font-family: "Lucida Sans Unicode", sans-serif;
+}
+
+.k-clue {
+    display: none;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9rem;
+    border-left: 2px solid var(--accent-action);
+    padding-left: 8px;
+    margin-top: 5px;
+}
+
+.k-clue::before {
+    content: "🤔 Hint: ";
+    font-style: normal;
+    font-weight: bold;
+}
+
+.k-def {
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.k-context {
+    font-size: 0.85rem;
+    color: #7F8C8D;
+    background: #F2F4F7;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* Insight */
+.insight-body {
+    padding: 16px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #555;
+}
+
+.insight-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+    color: white;
+    background: #2C3E50;
+}
+
+/* Debate Button */
+.btn-debate {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #EEE;
+    background: #FFF;
+    color: var(--accent-action);
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-debate:hover {
+    border-color: var(--accent-action);
+    background: rgba(93, 63, 211, 0.05);
+}
+
+/* 动画 */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
