@@ -257,6 +257,7 @@ body.mode-learn .copilot-panel {
     padding-top: 100px;
     padding-bottom: 300px;
     position: relative;
+    /* Anchor for absolute elements like Focus Marker */
     transition: margin 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -328,7 +329,7 @@ body.ask-mode .reader-content {
 
 /* 段落容器 */
 .paragraph {
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
     position: relative;
     transition: opacity 0.4s;
     padding: 10px 15px;
@@ -351,6 +352,18 @@ body.ask-mode .reader-content {
 
 .paragraph.active .para-text {
     color: #000;
+    font-weight: 500;
+    /* Slightly bolder */
+}
+
+/* Enhanced Active State */
+.paragraph.active {
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* Soft shadow pop */
+    transform: scale(1.02);
+    /* Subtle zoom */
+    z-index: 10;
 }
 
 /* Lv5 模糊模式 (Cloze Mode) */
@@ -398,13 +411,16 @@ body.ask-mode .reader-content {
     border-radius: 4px;
     background: #EEE;
     color: #999;
-    font-size: 0.6rem;
-    margin-left: 6px;
+    font-size: 0.7rem;
     cursor: pointer;
-    vertical-align: super;
     transition: all 0.2s;
     opacity: 0;
     transform: scale(0.8);
+    position: absolute;
+    right: -35px;
+    /* Aligned with ask-trigger column */
+    top: 40px;
+    /* Below ask-trigger */
 }
 
 .paragraph:hover .trans-toggle,

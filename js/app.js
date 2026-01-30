@@ -322,23 +322,57 @@ window.toggleTrans = function (e, id) {
 }
 
 // 滚动监听
+// 滚动监听
 const readerPanel = document.getElementById('readerPanel');
-const paragraphs = document.querySelectorAll('.paragraph');
+// Remove static `paragraphs` const or make it a function to get current ones.
 
 readerPanel.addEventListener('scroll', () => {
     const checkPoint = window.innerHeight * 0.35;
     let activeEl = null;
 
-    paragraphs.forEach(p => {
+    // Dynamically query paragraphs
+    const currentParagraphs = document.querySelectorAll('.paragraph');
+    if (currentParagraphs.length === 0) return;
+
+    currentParagraphs.forEach(p => {
         const rect = p.getBoundingClientRect();
         if (rect.top <= checkPoint && rect.bottom >= checkPoint) {
             activeEl = p;
         }
     });
 
+    // Edge case: No paragraph crosses checkpoint (at top or bottom of scroll)
+    if (!activeEl) {
+        const firstPara = currentParagraphs[0];
+        const lastPara = currentParagraphs[currentParagraphs.length - 1];
+        const firstRect = firstPara.getBoundingClientRect();
+        const lastRect = lastPara.getBoundingClientRect();
+
+        // If first paragraph is below checkpoint, select it (scrolled to top)
+        if (firstRect.top > checkPoint) {
+            activeEl = firstPara;
+        }
+        // If last paragraph is above checkpoint, select it (scrolled to bottom)
+        else if (lastRect.bottom < checkPoint) {
+            activeEl = lastPara;
+        }
+        // Fallback: find the paragraph closest to checkpoint
+        else {
+            let minDist = Infinity;
+            currentParagraphs.forEach(p => {
+                const rect = p.getBoundingClientRect();
+                const dist = Math.min(Math.abs(rect.top - checkPoint), Math.abs(rect.bottom - checkPoint));
+                if (dist < minDist) {
+                    minDist = dist;
+                    activeEl = p;
+                }
+            });
+        }
+    }
+
     if (activeEl && activeEl.getAttribute('data-id') !== state.activeId) {
         state.activeId = activeEl.getAttribute('data-id');
-        paragraphs.forEach(p => p.classList.remove('active'));
+        currentParagraphs.forEach(p => p.classList.remove('active'));
         activeEl.classList.add('active');
 
         renderDashboard(state.activeId);
@@ -412,6 +446,15 @@ function injectAskTriggers() {
         p.appendChild(btn);
         p.appendChild(bubble);
     });
+}
+
+function requestApiKey() {
+    const key = prompt("⚠️ Safety Alert: API Key Missing.\n\nTo use AI features without a backend, please enter your Google Gemini API Key below.\nIt will be saved securely in your browser's LocalStorage.");
+    if (key && key.trim()) {
+        localStorage.setItem('GOOGLE_API_KEY', key.trim());
+        alert("Key saved! Reloading page to apply...");
+        window.location.reload();
+    }
 }
 
 window.toggleAsk = function (e, id) {
@@ -504,7 +547,7 @@ function processUserQuestion(id, text) {
         .catch(err => {
             console.error(err);
             if (err.message.includes("Key is missing")) {
-                addMsg(id, 'ai', "⚠️ Please set your API Key in `js/config.js` to enable real AI features.");
+                requestApiKey();
             } else {
                 addMsg(id, 'ai', "Sorry, I encountered an error: " + err.message);
             }
@@ -568,54 +611,169 @@ window.switchTab = function (tab) {
 window.processImport = function () {
     const isText = document.getElementById('tab-text').classList.contains('active');
     const loading = document.getElementById('importLoading');
-
     loading.classList.remove('hidden');
 
-    // Simulation delay
-    setTimeout(() => {
-        loading.classList.add('hidden');
-        closeImportModal();
-
-        if (isText) {
-            const rawText = document.getElementById('importText').value;
-            if (rawText.trim()) loadTextContent(rawText);
-        } else {
-            // URL Mode (Mock)
-            loadUrlContent();
+    if (isText) {
+        const rawText = document.getElementById('importText').value;
+        if (!rawText.trim()) {
+            loading.classList.add('hidden');
+            return;
         }
-    }, 600);
+
+        // Call AI
+        aiService.analyzeText(rawText)
+            .then(data => {
+                loading.classList.add('hidden');
+                closeImportModal();
+
+                if (data && data.paragraphs) {
+                    loadAIContent(data.paragraphs);
+                } else {
+                    alert("AI Analysis failed to return valid structure.");
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                console.error(err);
+                if (err.message.includes("Key is missing")) {
+                    requestApiKey();
+                } else {
+                    alert("Detailed Error: " + err.message);
+                }
+            });
+    } else {
+        // URL Mode (Mock)
+        setTimeout(() => {
+            loading.classList.add('hidden');
+            closeImportModal();
+            loadUrlContent();
+        }, 600);
+    }
 };
 
-function loadTextContent(text) {
+function loadAIContent(paragraphs) {
     const reader = document.querySelector('.reader-content');
     reader.innerHTML = '';
 
-    const paragraphs = text.split(/\n+/).filter(p => p.trim() !== '');
+    // Re-create Focus Marker (was deleted by innerHTML = '')
+    const marker = document.createElement('div');
+    marker.className = 'focus-marker';
+    marker.id = 'focusMarker';
+    reader.appendChild(marker);
 
-    paragraphs.forEach((pText, index) => {
-        const id = `user-p${index}`;
+    // Clear existing bookData import entries if we want fresh start, or append?
+    // For demo, let's overwrite/append but maybe use unique IDs.
+    // Let's use 'import-pX' IDs.
+
+    paragraphs.forEach((pData, index) => {
+        const id = `import-p${index}`;
+
+        // 1. Update Global Data
+        bookData[id] = {
+            knowledge: pData.knowledge || [],
+            insight: pData.insight || { tag: "Analysis", text: "No insight available." },
+            ambient: null,
+            translation: pData.translation || "Translation not available."
+        };
+
+        // 2. Render DOM
         const div = document.createElement('div');
         div.className = 'paragraph';
         div.setAttribute('data-id', id);
 
-        // Mock Scaffolding: highlight random words from a small dict
-        const enrichedHTML = mockClientInfo(pText, id);
+        // Inject Text with scaffolding spans
+        const pText = document.createElement('div');
+        pText.className = 'para-text';
 
-        div.innerHTML = `
-             <div class="para-text">${enrichedHTML}</div>
-             <!-- No pre-translated Chinese for user content in this demo -->
+        // We need to wrap keywords in spans.
+        // Simple string replacement might be buggy if words overlap. 
+        // For demo, we sort keywords by length (longest first) to avoid partial replacement issues? -> No, overlapping issues.
+        // Better: Split text by keywords? 
+        // OR: Just use simple replacement for now, assuming keywords are distinct enough.
+
+        let htmlContent = pData.text;
+        // Sort knowledge by length desc to prevent "University" replacing "Universe" inside it?
+        // Actually, simple replacement is risky.
+        // But let's try a regex approach with word boundaries.
+
+        // Sort by length to prioritize longer phrases
+        const sortedKeys = [...(pData.knowledge || [])].sort((a, b) => b.word.length - a.word.length);
+
+        sortedKeys.forEach(k => {
+            // Escape regex special chars in word
+            const safeWord = k.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Case insensitive match, but preserve original case in text? 
+            // We want to wrap the MATCHED text.
+            const regex = new RegExp(`\\b(${safeWord})\\b`, 'gi');
+            htmlContent = htmlContent.replace(regex, `<span class="smart-word" data-key="${k.key}">$1</span>`);
+        });
+
+        pText.innerHTML = htmlContent;
+        div.appendChild(pText);
+
+        // Add Translation (Hidden by default)
+        const transDiv = document.createElement('div');
+        transDiv.className = 'inline-trans';
+        transDiv.id = `trans-${id}`;
+        transDiv.innerText = bookData[id].translation;
+        div.appendChild(transDiv);
+
+        // Add Ask Trigger AND Translation Toggle
+        const btn = document.createElement('div');
+        btn.className = 'ask-trigger';
+        // We can stack buttons or make it a specific one.
+        // For now, let's keep the '✨' but maybe add a small translation icon next to it?
+        // Or better, let's inject a separate toggle button for translation, 
+        // consistent with the main app design (e.g. a small '译' icon floating).
+        // Let's create a container for floating actions if needed, or just Absolute position.
+
+        const transBtn = document.createElement('div');
+        transBtn.className = 'trans-toggle';
+        transBtn.innerHTML = '译';
+        transBtn.title = "Toggle Translation";
+        transBtn.onclick = (e) => toggleTrans(e, id);
+        div.appendChild(transBtn);
+
+        btn.innerHTML = '✨';
+        btn.title = "Ask AI about this paragraph";
+        btn.onclick = (e) => toggleAsk(e, id);
+
+        // Add Chat Bubble Structure
+        const bubble = document.createElement('div');
+        bubble.className = 'ask-bubble';
+        bubble.id = `ask-bubble-${id}`;
+        bubble.innerHTML = `
+            <div class="ask-history" id="ask-history-${id}"></div>
+            <input type="text" class="ask-input" placeholder="Ask anything..." onkeydown="handleAskInput(event, '${id}')">
         `;
+
+        div.appendChild(btn);
+        div.appendChild(bubble);
+
         reader.appendChild(div);
+
+        // Observer - Removed (Using scroll listener)
+        // observer.observe(div);
     });
 
-    // Re-inject dependencies
-    injectAskTriggers();
-    updateMarkerPosition();
-    // Scroll to top
-    window.scrollTo(0, 0);
+    // Add spacer at bottom for scroll padding (so last paragraph can scroll to checkpoint)
+    const bottomSpacer = document.createElement('div');
+    bottomSpacer.style.height = '60vh';
+    reader.appendChild(bottomSpacer);
 
-    // Notify
-    alert("Content Imported! AI Scaffolding applied (Demo Mode).");
+    // Reset state to first paragraph
+    state.activeId = `import-p0`;
+    // Mark first paragraph as active
+    const firstPara = reader.querySelector('.paragraph');
+    if (firstPara) firstPara.classList.add('active');
+
+    // We need to manually trigger active update because scroll event might not happen yet
+    renderDashboard('import-p0');
+    syncHighlightsInText('import-p0');
+    updateMarkerPosition();
+
+    // Scroll to top
+    document.getElementById('readerPanel').scrollTo(0, 0);
 }
 
 function loadUrlContent() {
