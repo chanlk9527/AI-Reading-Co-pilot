@@ -181,6 +181,27 @@ body.mode-learn {
     font-size: 0.9rem;
 }
 
+.import-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: #F0F2F5;
+    /* Match mode switcher bg */
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.import-btn:hover {
+    background: #E1E5EB;
+    transform: scale(1.05);
+}
+
 .level-capsule.small {
     width: 200px;
     /* Smaller width */
@@ -428,7 +449,7 @@ body.mode-learn .smart-word.highlighted {
     color: #000;
 }
 
-/* Instant Peek Tooltip (Flow Mode Only) */
+/* Instant Peek Tooltip (Flow & Learn Mode) */
 .peek-tooltip {
     position: absolute;
     bottom: 100%;
@@ -446,7 +467,7 @@ body.mode-learn .smart-word.highlighted {
     z-index: 1000;
 }
 
-body.mode-flow .smart-word:hover .peek-tooltip {
+.smart-word:hover .peek-tooltip {
     opacity: 1;
 }
 
@@ -602,6 +623,12 @@ body.mode-flow .smart-word:hover .peek-tooltip {
 
 .knowledge-item:last-child {
     border-bottom: none;
+}
+
+.knowledge-item.active-card-highlight {
+    background-color: #e3f2fd;
+    /* Light Blue */
+    border-left: 4px solid var(--theme-primary);
 }
 
 /* 未揭示状态 (Guess Mode) */
@@ -837,6 +864,8 @@ body.mode-flow .smart-word:hover .peek-tooltip {
     font-size: 0.9rem;
     outline: none;
     resize: none;
+    box-sizing: border-box;
+    /* Prevent overflow */
 }
 
 .ask-input:focus {
@@ -869,7 +898,95 @@ body.mode-flow .smart-word:hover .peek-tooltip {
     padding: 6px 10px;
     border-radius: 0 8px 8px 8px;
     max-width: 90%;
-    line-height: 1.4;
+    max-width: 90%;
+    line-height: 1.5;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    /* Allow wrapping */
+    gap: 8px;
+    margin-top: 10px;
+    padding-bottom: 5px;
+    /* overflow-x: auto; Removed scrolling */
+}
+
+.suggestion-chips::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar Chrome */
+}
+
+.ask-chip {
+    background: #fff;
+    border: 1px solid #E1E5EB;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+}
+
+.ask-chip:hover {
+    background: var(--theme-primary);
+    color: white;
+    border-color: var(--theme-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.msg-ai p {
+    margin: 0.5em 0;
+}
+
+.msg-ai p:first-child {
+    margin-top: 0;
+}
+
+.msg-ai p:last-child {
+    margin-bottom: 0;
+}
+
+.msg-ai strong {
+    color: #2C3E50;
+    font-weight: 700;
+}
+
+.msg-ai ul,
+.msg-ai ol {
+    margin: 0.5em 0;
+    padding-left: 1.4em;
+}
+
+.msg-ai li {
+    margin-bottom: 0.3em;
+}
+
+.msg-thinking {
+    align-self: flex-start;
+    color: #AAA;
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-left: 10px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
 }
 
 /* Learn Mode Inline Definition (Lv 1) */
@@ -881,4 +998,177 @@ body.mode-flow .smart-word:hover .peek-tooltip {
     vertical-align: baseline;
     font-family: -apple-system, "PingFang SC", sans-serif;
     pointer-events: none;
+}
+
+/* ================= Import Modal ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    /* backdrop-filter: blur(5px); Removed for performance */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.import-tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #F0F2F5;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 0;
+    cursor: pointer;
+    font-weight: 500;
+    color: #999;
+    opacity: 0.7;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    opacity: 1;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+#importText,
+#importUrl {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #EEE;
+    border-radius: 12px;
+    background: #FAFAFA;
+    font-family: inherit;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    /* Fix overflow */
+}
+
+#importText {
+    height: 150px;
+    resize: none;
+}
+
+#importText:focus,
+#importUrl:focus {
+    outline: none;
+    border-color: var(--theme-primary);
+    background: white;
+}
+
+.hint-text {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    border: none;
+    background: #F0F2F5;
+    color: #555;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary {
+    padding: 10px 24px;
+    border: none;
+    background: var(--theme-primary);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(9, 132, 227, 0.3);
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--theme-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

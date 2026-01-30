@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Reading Coach: Socratic Edition</title>
     <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -22,6 +23,9 @@
         <!-- Expanded View (Visible on hover) -->
         <div class="control-expanded-content">
             <div class="control-inner">
+                <button class="import-btn" onclick="openImportModal()" title="Import Content">
+                    📥
+                </button>
                 <div class="mode-switcher compact">
                     <button class="mode-btn active" onclick="switchMode('flow')" id="btn-flow">
                         ☕️ Flow
@@ -124,6 +128,36 @@
         </div>
     </div>
 
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>✨ Smart Import</h2>
+            <div class="import-tabs">
+                <button class="tab-btn active" onclick="switchTab('text')">Text Paste</button>
+                <button class="tab-btn" onclick="switchTab('url')">URL Fetch</button>
+            </div>
+
+            <div id="tab-text" class="tab-pane active">
+                <textarea id="importText" placeholder="Paste your article here..."></textarea>
+            </div>
+
+            <div id="tab-url" class="tab-pane">
+                <input type="text" id="importUrl" placeholder="https://example.com/article">
+                <p class="hint-text">Paste a URL to automatically extract and scaffold content.</p>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn-primary" onclick="processImport()">Magic Enhance 🪄</button>
+            </div>
+            <div id="importLoading" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p>AI is digesting content...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js" type="module"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 

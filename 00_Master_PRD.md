@@ -41,18 +41,20 @@
 
 **Scaffolding Level (1-3)** 主要定义交互的 **干预强度 (Intervention Intensity)**。即：当用户求助（Hover/Click）时，AI 提供多大程度的直接帮助。
 
-*   **Lv 1: Support (辅助模式)** - *“我只想顺畅读完。”*
+*   **Lv 1: Support (辅助模式)**
     *   **核心逻辑:** 消除摩擦。
-    *   **交互行为 (Flow):** Hover 气泡直接显示 **中文释义**。
-    *   **适用场景:** 疲劳阅读、高难度材料、追求速度。
-*   **Lv 2: Scaffold (引导模式)** - *“我想学点东西。”* **(默认推荐)**
-    *   **核心逻辑:** 必要的困难 (Desirable Difficulty)。
-    *   **交互行为 (Flow):** Hover 气泡显示 **英文线索 (Hint)** 或 **Emoji**。点击后才揭示中文。
-    *   **适用场景:** 主动学习、建立英语思维。
-*   **Lv 3: Challenge (原生模式)** - *“我是来挑战的。”*
-    *   **核心逻辑:** 模拟真实环境。
-    *   **交互行为 (Flow):** Hover **不显示释义** (仅显示音标或发音按钮)。只有执行意图极强的操作（如长按/双击）才显示解释。
-    *   **适用场景:** 考前冲刺、沉浸式母语体验。
+    *   **交互 (Flow/Learn):** Hover 直接显示 **中文释义**。
+    *   **Learn 卡片:** 直接显示完整释义。
+*   **Lv 2: Scaffold (引导模式)** **(默认推荐)**
+    *   **核心逻辑:** 适度辅助。
+    *   **交互 (Flow):** Hover 显示英文线索 (Hint)。
+    *   **交互 (Learn):** Hover 显示 **中文释义** (New)。
+    *   **Learn 卡片:** 直接显示完整释义 (New)。
+*   **Lv 3: Challenge (苏格拉底模式)**
+    *   **核心逻辑:** 主动思考 (Socratic)。
+    *   **交互 (Flow):** Hover 仅显示音标。
+    *   **交互 (Learn):** Hover 显示音标。
+    *   **Learn 卡片:** **模糊处理 (Blur)**，需点击揭示 (Guess Mode)。
 
 ### 2.3 词汇能力等级 (Vocabulary Proficiency) - **NEW**
 
@@ -68,9 +70,17 @@
 
 *   **交互隐喻:** "Sparkle in the Margin" (边缘的火花).
 *   **触发方式:** 
-    *   **Flow Mode:** 随视线聚焦（Active Paragraph），在段落边缘浮现极简图标 `✨`。点击唤起悬浮对话气泡。
-    *   **Learn Mode:** 整合于右侧 Copilot 面板底部。
-*   **核心价值:** 弥补预设 Scaffolding 的盲区，满足个性化好奇心。
+### 2.5 Smart Import (Magic Content) - **NEW**
+
+**核心流程**: "Import -> Digestion -> Enhancement".
+
+*   **入口 (Magic Paste):** 支持直接粘贴文本或 URL。
+*   **AI Digestion (预处理):**
+    *   **Cleaning:** 自动识别正文，去除广告干扰。
+    *   **Leveling:** 自动判别文章难度 (CEFR)。
+*   **Enhancement (知识增强):**
+    *   用户导入的文章，瞬间拥有 Scaffolding 能力（生词高亮、智能释义、Insights）。
+    *   *Demo 策略*: 针对 URL 导入，模拟抓取效果；针对文本导入，前端进行基础关键词匹配演示。
 
 ---
 

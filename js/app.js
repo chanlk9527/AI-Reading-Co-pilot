@@ -1,4 +1,5 @@
 import { bookData } from './data.js';
+import { aiService } from './ai.js';
 
 // --- 2. 状态管理 ---
 let state = {
@@ -137,14 +138,14 @@ function renderDashboard(id) {
     if (activePoints.length > 0) {
         let cardsHtml = activePoints.map(k => {
             // New Mapping:
-            // Lv 1: Reveal Mode (Show all)
-            // Lv 2 & 3: Guess Mode (Hide defs)
+            // Lv 1 & 2: Reveal Mode (Show all) - Learn Mode Lv2 now shows full details
+            // Lv 3: Guess Mode (Socratic Blur) - Only Lv3 hides defs
 
-            const isGuessMode = (state.level >= 2) && !state.revealedKeys.includes(k.key);
+            const isGuessMode = (state.level >= 3) && !state.revealedKeys.includes(k.key);
             const modeClass = isGuessMode ? 'k-guess-mode' : 'k-reveal-mode';
 
             return `
-                    <div class="knowledge-item ${modeClass}" onclick="revealCard(this, '${k.key}')" onmouseenter="highlightWord('${k.key}')" onmouseleave="unhighlightWord('${k.key}')">
+                    <div class="knowledge-item ${modeClass}" data-key="${k.key}" onclick="revealCard(this, '${k.key}')" onmouseenter="highlightWord('${k.key}')" onmouseleave="unhighlightWord('${k.key}')">
                         <div class="k-top">
                             <span class="k-word">${k.word}</span>
                             <span class="k-ipa">${k.ipa}</span>
@@ -247,6 +248,10 @@ function syncHighlightsInText(id) {
 
             // Learn Mode: Special Text Handlers
             if (state.mode === 'learn') {
+                // Reverse Highlighting: Hover Text -> Highlight Card
+                span.onmouseenter = () => highlightCard(k.key);
+                span.onmouseleave = () => unhighlightCard(k.key);
+
                 // Remove any existing inline defs first to be safe (handled by general reset above, but innerHTML might persist if appended)
                 // Actually the reset above "remove 'has-card'" doesn't remove appended children. 
                 // We need to ensure we don't duplicate.
@@ -285,6 +290,28 @@ window.unhighlightWord = function (key) {
     if (state.mode !== 'learn') return;
     const span = document.querySelector(`.paragraph.active .smart-word[data-key="${key}"]`);
     if (span) span.classList.remove('highlighted');
+}
+
+window.highlightCard = function (key) {
+    if (state.mode !== 'learn') return;
+    // Find the card in the dashboard? Dashboard is rebuilt often but usually stable when reading.
+    // We need to match by something? Wait, `renderDashboard` creates cards but key isn't stored in attribute?
+    // Let's check `renderDashboard`. It passes `key` to `onclick` but maybe add `data-key` attribute to `.knowledge-item`?
+    // Since I can't easily change renderDashboard in this tool call without replacing it all, 
+    // I will assume I need to ADD data-key to renderDashboard first or try to find by onclick content? 
+    // No, better to update renderDashboard.
+    // BUT, I can select by onclick attribute as a hack or better yet, I should update `renderDashboard` separately.
+    // For now, I'll add the functions and placeholder logic, then update renderDashboard in next step.
+    const card = document.querySelector(`.knowledge-item[data-key="${key}"]`);
+    if (card) {
+        card.classList.add('active-card-highlight');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Auto-scroll to card!
+    }
+}
+window.unhighlightCard = function (key) {
+    if (state.mode !== 'learn') return;
+    const card = document.querySelector(`.knowledge-item[data-key="${key}"]`);
+    if (card) card.classList.remove('active-card-highlight');
 }
 
 window.toggleTrans = function (e, id) {
@@ -350,6 +377,11 @@ window.onload = () => {
             document.body.classList.remove('ask-mode');
         }
     });
+
+    // Modal Click Outside
+    document.getElementById('importModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('importModal')) closeImportModal();
+    });
 };
 window.onresize = updateMarkerPosition;
 
@@ -401,31 +433,89 @@ window.toggleAsk = function (e, id) {
         const input = targetBubble.querySelector('input');
         setTimeout(() => input.focus(), 100);
 
-        // If empty history, add greeting
+        // If empty history, add greeting and chips
         const history = document.getElementById(`ask-history-${id}`);
         if (history.innerHTML === '') {
-            addMsg(id, 'ai', "Any questions about this paragraph? I'm listening.");
+            addMsg(id, 'ai', "有什么我可以帮您的？");
+            addSuggestionChips(id);
         }
     }
+}
+
+// Chips Data
+const suggestionChips = [
+    { label: "👶 简单解释", prompt: "请像给5岁孩子讲故事一样，简单解释这段话在说什么。" },
+    { label: "🤯 深度解析", prompt: "请深度解析这段话的逻辑和语境，帮我建立 mental model。" },
+    { label: "📐 语法拆解", prompt: "请用中文分析这段话的语法结构，拆解长难句。" },
+    { label: "💎 地道表达", prompt: "这段话里有哪些值得积累的地道表达或搭配？" }
+];
+
+function addSuggestionChips(id) {
+    const history = document.getElementById(`ask-history-${id}`);
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'suggestion-chips';
+
+    suggestionChips.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.className = 'ask-chip';
+        btn.innerText = chip.label;
+        btn.onclick = (e) => {
+            e.stopPropagation(); // Prevent closing the bubble
+            handleChipClick(id, chip.prompt);
+        }
+        chipsContainer.appendChild(btn);
+    });
+
+    history.appendChild(chipsContainer);
+    // Scroll to bottom
+    history.scrollTop = history.scrollHeight;
+}
+
+window.handleChipClick = function (id, text) {
+    // 1. Remove the chips container (optional, or keep it? usually remove to declutter)
+    // Let's remove ONLY the chips container to transform it into the user message
+    const history = document.getElementById(`ask-history-${id}`);
+    const chips = history.querySelector('.suggestion-chips');
+    if (chips) chips.remove();
+
+    // 2. Treat as user input via handleAskInput simulation
+    // We can reuse the logic in handleAskInput but it expects an event. 
+    // Let's extract the core logic of handleAskInput into `processUserQ`
+    processUserQuestion(id, text);
+}
+
+// Refactored from handleAskInput to support direct calls
+function processUserQuestion(id, text) {
+    addMsg(id, 'user', text);
+
+    // Get context (Paragraph text)
+    const pText = document.querySelector(`.paragraph[data-id="${id}"] .para-text`).innerText;
+    const systemPrompt = `You are an expert reading coach. The user is reading a paragraph. 
+    Context Paragraph: "${pText}".
+    Answer the user's question briefly and helpfully using **Chinese** (you may use English for specific terms or examples). 
+    **Constraint: Keep your answer under 80 words and very concise.**
+    Focus on vocabulary, nuance, and comprehension.`;
+
+    // Call AI Service
+    aiService.chat(systemPrompt, text)
+        .then(reply => {
+            addMsg(id, 'ai', reply);
+        })
+        .catch(err => {
+            console.error(err);
+            if (err.message.includes("Key is missing")) {
+                addMsg(id, 'ai', "⚠️ Please set your API Key in `js/config.js` to enable real AI features.");
+            } else {
+                addMsg(id, 'ai', "Sorry, I encountered an error: " + err.message);
+            }
+        });
 }
 
 window.handleAskInput = function (e, id) {
     if (e.key === 'Enter' && e.target.value.trim() !== '') {
         const text = e.target.value.trim();
-        addMsg(id, 'user', text);
+        processUserQuestion(id, text);
         e.target.value = '';
-
-        // Mock AI Response
-        setTimeout(() => {
-            const responses = [
-                "That's a great question! In this context, it implies...",
-                "Notice the subtle irony here. The author is suggesting...",
-                "Historically, this represents the social norms of the era.",
-                "Yes, exactly! It highlights the character's motivation."
-            ];
-            const randomResp = responses[Math.floor(Math.random() * responses.length)];
-            addMsg(id, 'ai', randomResp);
-        }, 800);
     }
 }
 
@@ -433,7 +523,166 @@ function addMsg(id, role, text) {
     const history = document.getElementById(`ask-history-${id}`);
     const div = document.createElement('div');
     div.className = role === 'user' ? 'msg-user' : 'msg-ai';
-    div.innerText = text;
+
+    // Use Marked to parse Markdown if available, otherwise fallback to text
+    if (typeof marked !== 'undefined' && role === 'ai') {
+        div.innerHTML = marked.parse(text);
+    } else {
+        div.innerText = text;
+    }
+
     history.appendChild(div);
     history.scrollTop = history.scrollHeight;
+}
+
+function removeThinking(id) {
+    const history = document.getElementById(`ask-history-${id}`);
+    const thinking = history.querySelector('.msg-thinking');
+    if (thinking) thinking.remove();
+}
+
+// --- Import Logic ---
+window.openImportModal = function () {
+    const modal = document.getElementById('importModal');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+};
+
+window.closeImportModal = function () {
+    const modal = document.getElementById('importModal');
+    modal.classList.remove('show');
+    setTimeout(() => modal.style.display = 'none', 300);
+};
+
+window.switchTab = function (tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+    const btns = document.querySelectorAll('.tab-btn');
+    if (tab === 'text') btns[0].classList.add('active');
+    else btns[1].classList.add('active');
+
+    document.getElementById(`tab-${tab}`).classList.add('active');
+};
+
+window.processImport = function () {
+    const isText = document.getElementById('tab-text').classList.contains('active');
+    const loading = document.getElementById('importLoading');
+
+    loading.classList.remove('hidden');
+
+    // Simulation delay
+    setTimeout(() => {
+        loading.classList.add('hidden');
+        closeImportModal();
+
+        if (isText) {
+            const rawText = document.getElementById('importText').value;
+            if (rawText.trim()) loadTextContent(rawText);
+        } else {
+            // URL Mode (Mock)
+            loadUrlContent();
+        }
+    }, 600);
+};
+
+function loadTextContent(text) {
+    const reader = document.querySelector('.reader-content');
+    reader.innerHTML = '';
+
+    const paragraphs = text.split(/\n+/).filter(p => p.trim() !== '');
+
+    paragraphs.forEach((pText, index) => {
+        const id = `user-p${index}`;
+        const div = document.createElement('div');
+        div.className = 'paragraph';
+        div.setAttribute('data-id', id);
+
+        // Mock Scaffolding: highlight random words from a small dict
+        const enrichedHTML = mockClientInfo(pText, id);
+
+        div.innerHTML = `
+             <div class="para-text">${enrichedHTML}</div>
+             <!-- No pre-translated Chinese for user content in this demo -->
+        `;
+        reader.appendChild(div);
+    });
+
+    // Re-inject dependencies
+    injectAskTriggers();
+    updateMarkerPosition();
+    // Scroll to top
+    window.scrollTo(0, 0);
+
+    // Notify
+    alert("Content Imported! AI Scaffolding applied (Demo Mode).");
+}
+
+function loadUrlContent() {
+    // In a real app, this would fetch. Here we load a "Steve Jobs" demo.
+    const reader = document.querySelector('.reader-content');
+    reader.innerHTML = '';
+
+    // Static demo content for "Steve Jobs Commencement Speech"
+    const demoData = [
+        { id: "sj1", text: "I am honored to be with you today at your commencement from one of the finest universities in the world." },
+        { id: "sj2", text: "I never graduated from college. Truth be told, this is the closest I've ever gotten to a college graduation." },
+        { id: "sj3", text: "Today I want to tell you three stories from my life. That's it. No big deal. Just three stories." }
+    ];
+
+    demoData.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'paragraph';
+        div.setAttribute('data-id', item.id);
+
+        // Use the same mock highlighter
+        const enrichedHTML = mockClientInfo(item.text, item.id);
+        div.innerHTML = `<div class="para-text">${enrichedHTML}</div>`;
+        reader.appendChild(div);
+    });
+
+    injectAskTriggers();
+    updateMarkerPosition();
+    window.scrollTo(0, 0);
+}
+
+// Simple Client-side Dictionary for Demo
+const demoDict = {
+    "honored": { def: "荣幸", clue: "Privileged / Proud" },
+    "commencement": { def: "毕业典礼", clue: "Graduation ceremony" },
+    "universities": { def: "大学", clue: "Higher education institutions" },
+    "graduated": { def: "毕业", clue: "Finished school" },
+    "truth": { def: "真相", clue: "Fact" },
+    "closest": { def: "最接近的", clue: "Nearest" },
+    "graduation": { def: "毕业", clue: "Completing a degree" },
+    "stories": { def: "故事", clue: "Tales / Narratives" }
+};
+
+function mockClientInfo(text, pid) {
+    let html = text;
+    // Basic replace - Case insensitive
+    Object.keys(demoDict).forEach(word => {
+        const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+        html = html.replace(regex, (match) => {
+            // Register Knowledge
+            if (!bookData[pid]) bookData[pid] = { knowledge: [], insight: null };
+
+            // Check if already registered
+            const exists = bookData[pid].knowledge.find(k => k.key === word);
+            if (!exists) {
+                bookData[pid].knowledge.push({
+                    key: word,
+                    diff: 2, // Default med
+                    word: match, // Preserve case
+                    ipa: "/.../",
+                    def: demoDict[word].def,
+                    clue: demoDict[word].clue,
+                    context: "Context..."
+                });
+            }
+
+            return `<span class="smart-word" data-key="${word}">${match}</span>`;
+        });
+    });
+    return html;
 }
