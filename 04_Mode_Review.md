@@ -20,8 +20,8 @@
 *   **Priority 1 (最高): Wrong/Clicked List**
     *   用户在 **Learn Mode** 中点击过（翻开过）的词。
     *   *逻辑:* "你刚才查了，说明你不懂，现在我要考考你。"
-*   **Priority 2: Level Core**
-    *   该 Level 对应大纲中的核心词汇。
+*   **Priority 2: Vocab Level Core**
+    *   该 **Proficiency Level (A1-C2)** 对应大纲中的核心词汇。
 *   **Priority 3: Syntax Anchors**
     *   关键语法词 (如 `However`, `Although`, `Despite`)，用于训练逻辑感。
 

@@ -3,8 +3,8 @@ import { bookData } from './data.js';
 // --- 2. 状态管理 ---
 let state = {
     mode: 'flow', // 'flow' | 'learn'
-    level: 3,     // Scaffolding Level (1-5)
-    vocabLevel: 'B1', // Vocabulary Proficiency (A1-C2)
+    level: 2,     // Scaffolding Level (1-3)
+    vocabLevel: 'A2', // Vocabulary Proficiency (A1-C2)
     activeId: null,
     revealedKeys: []
 };
@@ -19,11 +19,9 @@ const vocabMap = {
 };
 
 const levelDescs = [
-    "Novice: Full Translation",
-    "Beginner: Basic Vocab",
-    "Intermediate: Socratic Hints",
-    "Advanced: Hard Words Only",
-    "Expert: Master Class"
+    "Support: Full Translation",
+    "Scaffold: English Hints",
+    "Challenge: Pronunciation Only"
 ];
 
 function updateCollapsedLabel() {
@@ -138,7 +136,11 @@ function renderDashboard(id) {
     // Knowledge Cards
     if (activePoints.length > 0) {
         let cardsHtml = activePoints.map(k => {
-            const isGuessMode = (state.level === 3 || state.level === 4) && !state.revealedKeys.includes(k.key);
+            // New Mapping:
+            // Lv 1: Reveal Mode (Show all)
+            // Lv 2 & 3: Guess Mode (Hide defs)
+
+            const isGuessMode = (state.level >= 2) && !state.revealedKeys.includes(k.key);
             const modeClass = isGuessMode ? 'k-guess-mode' : 'k-reveal-mode';
 
             return `
@@ -195,6 +197,8 @@ function syncHighlightsInText(id) {
         // remove old tooltips if any
         const tip = s.querySelector('.peek-tooltip');
         if (tip) tip.remove();
+        const inlineDef = s.querySelector('.inline-def-tag');
+        if (inlineDef) inlineDef.remove();
     });
 
     const threshold = vocabMap[state.vocabLevel] || 1;
@@ -209,8 +213,62 @@ function syncHighlightsInText(id) {
             if (state.mode === 'flow') {
                 const tip = document.createElement('div');
                 tip.className = 'peek-tooltip';
-                tip.innerText = k.def.split('；')[0]; // Simple Def
+
+                // Logic based on Scaffolding Level (1-3)
+                // Lv 1: Support - Chinese Definition
+                // Lv 2: Scaffold - English Hint (Click to Reveal Chinese)
+                // Lv 3: Challenge - IPA Only (Double Click to Reveal Chinese)
+
+                if (state.level === 1) {
+                    // Support: Direct Chinese
+                    tip.innerText = k.def.split('；')[0];
+                } else if (state.level === 2) {
+                    // Scaffold: Hint / Clue
+                    tip.innerText = k.clue || "Hint?";
+                    // Click to reveal logic needs to happen on the SPAN trigger
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        tip.innerText = k.def.split('；')[0];
+                        span.classList.add('revealed-temporarily');
+                    };
+                } else if (state.level === 3) {
+                    // Challenge: IPA Only
+                    tip.innerText = k.ipa || "...";
+                    // Double click to reveal
+                    span.ondblclick = (e) => {
+                        e.stopPropagation();
+                        tip.innerText = k.def.split('；')[0];
+                    };
+                    // Single click might just play audio (mock) or do nothing
+                }
+
                 span.appendChild(tip);
+            }
+
+            // Learn Mode: Special Text Handlers
+            if (state.mode === 'learn') {
+                // Remove any existing inline defs first to be safe (handled by general reset above, but innerHTML might persist if appended)
+                // Actually the reset above "remove 'has-card'" doesn't remove appended children. 
+                // We need to ensure we don't duplicate.
+                if (span.querySelector('.inline-def-tag')) span.querySelector('.inline-def-tag').remove();
+                if (span.querySelector('.peek-tooltip')) span.querySelector('.peek-tooltip').remove();
+
+
+                if (state.level === 1) {
+                    // Lv 1: Show Chinese Definition IN PLACE (Inline)
+                    const defTag = document.createElement('span');
+                    defTag.className = 'inline-def-tag';
+                    defTag.innerText = ` ${k.def.split('；')[0]}`;
+                    span.appendChild(defTag);
+                } else if (state.level === 2) {
+                    // Lv 2: Show Chinese Definition ON HOVER
+                    const tip = document.createElement('div');
+                    tip.className = 'peek-tooltip'; // Reuse tooltip style
+                    tip.innerText = k.def.split('；')[0];
+                    span.appendChild(tip);
+                }
+                // Lv 3 (Default): Highlight only, interact via Dashboard (No inline/hover text needed, or maybe just IPA?)
+                // Keeping Lv 3 clean for now as per "Immersion" logic.
             }
         }
     });
@@ -281,5 +339,101 @@ window.onload = () => {
     // Ensure marker updates after layout settles
     setTimeout(updateMarkerPosition, 100);
     updateCollapsedLabel();
+    injectAskTriggers();
+
+    // Global click listener to close Ask Bubble
+    document.addEventListener('click', (e) => {
+        const bubble = document.querySelector('.ask-bubble.show');
+        if (bubble && !bubble.contains(e.target) && !e.target.closest('.ask-trigger')) {
+            bubble.classList.remove('show');
+            // Reset layout
+            document.body.classList.remove('ask-mode');
+        }
+    });
 };
 window.onresize = updateMarkerPosition;
+
+// --- Ask AI Logic ---
+function injectAskTriggers() {
+    document.querySelectorAll('.paragraph').forEach(p => {
+        // Prevent double injection
+        if (p.querySelector('.ask-trigger')) return;
+
+        const id = p.getAttribute('data-id');
+
+        // Trigger Button
+        const btn = document.createElement('div');
+        btn.className = 'ask-trigger';
+        btn.innerHTML = '✨';
+        btn.title = "Ask AI about this paragraph";
+        btn.onclick = (e) => toggleAsk(e, id);
+
+        // Chat Bubble Container
+        const bubble = document.createElement('div');
+        bubble.className = 'ask-bubble';
+        bubble.id = `ask-bubble-${id}`;
+        bubble.innerHTML = `
+            <div class="ask-history" id="ask-history-${id}"></div>
+            <input type="text" class="ask-input" placeholder="Ask anything..." onkeydown="handleAskInput(event, '${id}')">
+        `;
+
+        p.appendChild(btn);
+        p.appendChild(bubble);
+    });
+}
+
+window.toggleAsk = function (e, id) {
+    e.stopPropagation();
+
+    // Check if clicking the same trigger again (to close)
+    const targetBubble = document.getElementById(`ask-bubble-${id}`);
+    const wasOpen = targetBubble.classList.contains('show');
+
+    // Close all
+    document.querySelectorAll('.ask-bubble.show').forEach(b => b.classList.remove('show'));
+    document.body.classList.remove('ask-mode');
+
+    if (!wasOpen) {
+        // Open Target
+        targetBubble.classList.add('show');
+        document.body.classList.add('ask-mode');
+
+        const input = targetBubble.querySelector('input');
+        setTimeout(() => input.focus(), 100);
+
+        // If empty history, add greeting
+        const history = document.getElementById(`ask-history-${id}`);
+        if (history.innerHTML === '') {
+            addMsg(id, 'ai', "Any questions about this paragraph? I'm listening.");
+        }
+    }
+}
+
+window.handleAskInput = function (e, id) {
+    if (e.key === 'Enter' && e.target.value.trim() !== '') {
+        const text = e.target.value.trim();
+        addMsg(id, 'user', text);
+        e.target.value = '';
+
+        // Mock AI Response
+        setTimeout(() => {
+            const responses = [
+                "That's a great question! In this context, it implies...",
+                "Notice the subtle irony here. The author is suggesting...",
+                "Historically, this represents the social norms of the era.",
+                "Yes, exactly! It highlights the character's motivation."
+            ];
+            const randomResp = responses[Math.floor(Math.random() * responses.length)];
+            addMsg(id, 'ai', randomResp);
+        }, 800);
+    }
+}
+
+function addMsg(id, role, text) {
+    const history = document.getElementById(`ask-history-${id}`);
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'msg-user' : 'msg-ai';
+    div.innerText = text;
+    history.appendChild(div);
+    history.scrollTop = history.scrollHeight;
+}

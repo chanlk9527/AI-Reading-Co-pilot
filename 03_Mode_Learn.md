@@ -28,8 +28,8 @@ Learn 模式不仅是展示知识，更是引导思考。我们利用 **双重�
 
 | 等级 | 视图名称 | 视觉样式 (CSS 实现) | 目的 |
 | :--- | :--- | :--- | :--- |
-| **Lv 1-2** | **Chunking View**<br>(意群视图) | `border: 1px dashed rgba(orange, 0.3)`<br>`background: rgba(orange, 0.05)`<br>将长句切分为 `[短语块]`。 | 降低句法认知负荷，辅助断句。 |
-| **Lv 3-5** | **Immersion View**<br>(沉浸视图) | 无边框。<br>仅对漏斗筛选出的 Token 添加高亮底色。<br>**Vocab:** Blue Highlight<br>**Syntax:** Orange Highlight | 聚焦核心难点，培养语感。 |
+| **Lv 1** | **Chunking View**<br>(意群视图) | `border: 1px dashed rgba(orange, 0.3)`<br>`background: rgba(orange, 0.05)`<br>将长句切分为 `[短语块]`。 | 降低句法认知负荷，辅助断句。 |
+| **Lv 2-3** | **Immersion View**<br>(沉浸视图) | 无边框。<br>仅对漏斗筛选出的 Token 添加高亮底色。<br>**Vocab:** Blue Highlight<br>**Syntax:** Orange Highlight | 聚焦核心难点，培养语感。 |
 
 ---
 
@@ -44,10 +44,9 @@ Learn 模式不仅是展示知识，更是引导思考。我们利用 **双重�
     *   **UI:** 灰色背景，内容折叠。
     *   **Content:** 仅显示单词原形 + **Hint (线索)**。
     *   **Hint 类型:**
-        *   *Lv 1-2:* 简单的英文解释 (Simple Definition)。
-        *   *Lv 3:* 同义词/反义词 (Synonym/Antonym)。
-        *   *Lv 4:* 词根词源 (Etymology)。
-        *   *Lv 5:* 空缺 (No Hint)，纯靠语境猜。
+        *   *Lv 1 (Support):* 简单的英文解释 (Simple Definition) + 中文提示。
+        *   *Lv 2 (Scaffold):* 同义词/反义词 (Synonym/Antonym) 或 词根 (Etymology)。
+        *   *Lv 3 (Challenge):* 空缺 (No Hint) 或 仅首字母，纯靠语境猜。
 *   **Action:** 用户点击卡片。
 *   **Feedback:**
     *   视觉：卡片翻转/破碎特效。
@@ -60,9 +59,9 @@ Learn 模式不仅是展示知识，更是引导思考。我们利用 **双重�
 位于仪表盘顶部，随光标所在段落刷新。
 
 *   **Persona Logic (人格切换):**
-    *   **The Translator (Lv 1-2):** "Summary Mode"。输出段落大意，解释 Who did What。
-    *   **The Professor (Lv 3-4):** "Analysis Mode"。输出句法结构分析（如倒装、虚拟语气）或词汇的精准用法。
-    *   **The Critic (Lv 5):** "Discussion Mode"。输出文学赏析（反讽、隐喻、社会背景），并抛出一个 **Debate Question**（辩论题）。
+    *   **The Translator (Lv 1):** "Summary Mode"。输出段落大意，解释 Who did What。
+    *   **The Professor (Lv 2):** "Analysis Mode"。输出句法结构分析（如倒装、虚拟语气）或词汇的精准用法。
+    *   **The Critic (Lv 3):** "Discussion Mode"。输出文学赏析（反讽、隐喻、社会背景），并抛出一个 **Debate Question**（辩论题）。
 
 ---
 

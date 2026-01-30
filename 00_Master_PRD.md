@@ -37,20 +37,22 @@
 | **🎓 Learn**<br>(学习模式) | **X光透视镜**<br>(X-Ray Specs) | **深度习得**<br>利用“双重漏斗”机制，透视句法结构，进行苏格拉底式学习。 | [🔗 03_Mode_Learn.md](./03_Mode_Learn.md) |
 | **📝 Review**<br>(复习模式) | **完形填空**<br>(The Quiz) | **记忆闭环**<br>基于用户的学习历史生成填空题，强制主动回忆 (Active Recall)。 | [🔗 04_Mode_Review.md](./04_Mode_Review.md) |
 
-### 2.2 五级认知阶梯 (The 5 Levels of Scaffolding)
+### 2.2 三级交互脚手架 (The 3 Scaffolding Levels)
 
-**Level (1-5)** 此处重新定义为 **“认知脚手架 (Cognitive Scaffolding)”的介入深度**，即 AI **如何** 帮助用户，而不是 **筛选哪些词**。
+**Scaffolding Level (1-3)** 主要定义交互的 **干预强度 (Intervention Intensity)**。即：当用户求助（Hover/Click）时，AI 提供多大程度的直接帮助。
 
-*   **Lv 1: Survival (生存)** - *“救救我，我读不懂。”*
-    *   **AI 行为:** 全量翻译，显性句法切分 (Chunking)，AI 充当“保姆翻译官”。
-*   **Lv 2: Basic (基础)** - *“我能读一点。”*
-    *   **AI 行为:** 保留短语提示，AI 解释难句结构。
-*   **Lv 3: Intermediate (进阶)** - *“我想学逻辑。”* **(默认等级)**
-    *   **AI 行为:** 进入“猜词模式” (Hint only)，高亮逻辑连接词，AI 点拨熟词生义。
-*   **Lv 4: Advanced (高阶)** - *“我想学修辞。”*
-    *   **AI 行为:** 仅提示极难词，AI 分析修辞手法 (隐喻/拟人)。
-*   **Lv 5: Master (大师)** - *“我想学文化。”*
-    *   **AI 行为:** 极简界面，仅提示文化典故，AI 变为“文学评论家”，引导批判性思维。
+*   **Lv 1: Support (辅助模式)** - *“我只想顺畅读完。”*
+    *   **核心逻辑:** 消除摩擦。
+    *   **交互行为 (Flow):** Hover 气泡直接显示 **中文释义**。
+    *   **适用场景:** 疲劳阅读、高难度材料、追求速度。
+*   **Lv 2: Scaffold (引导模式)** - *“我想学点东西。”* **(默认推荐)**
+    *   **核心逻辑:** 必要的困难 (Desirable Difficulty)。
+    *   **交互行为 (Flow):** Hover 气泡显示 **英文线索 (Hint)** 或 **Emoji**。点击后才揭示中文。
+    *   **适用场景:** 主动学习、建立英语思维。
+*   **Lv 3: Challenge (原生模式)** - *“我是来挑战的。”*
+    *   **核心逻辑:** 模拟真实环境。
+    *   **交互行为 (Flow):** Hover **不显示释义** (仅显示音标或发音按钮)。只有执行意图极强的操作（如长按/双击）才显示解释。
+    *   **适用场景:** 考前冲刺、沉浸式母语体验。
 
 ### 2.3 词汇能力等级 (Vocabulary Proficiency) - **NEW**
 
@@ -60,7 +62,15 @@
 *   **逻辑：** `Show Word IF (Word.Difficulty >= User.VocabLevel)`
 *   **冲突解决：** 之前的 Level 混合了“筛选”和“交互”。现在将二者解耦：
     *   **Vocab Level** 决定 **内容 (What)**：用户是 B2，则 B2+ 的词高亮。
-    *   **Scaffolding Level** 决定 **形式 (How)**：高亮后，是直接给中文翻译 (Lv1)，还是给英文线索 (Lv3)。
+### 2.4 Ask AI (The Omni-Query) - **NEW**
+
+**全模式通用功能**。允许用户针对当前阅读的段落进行自由提问。
+
+*   **交互隐喻:** "Sparkle in the Margin" (边缘的火花).
+*   **触发方式:** 
+    *   **Flow Mode:** 随视线聚焦（Active Paragraph），在段落边缘浮现极简图标 `✨`。点击唤起悬浮对话气泡。
+    *   **Learn Mode:** 整合于右侧 Copilot 面板底部。
+*   **核心价值:** 弥补预设 Scaffolding 的盲区，满足个性化好奇心。
 
 ---
 
