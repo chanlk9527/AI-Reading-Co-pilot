@@ -119,17 +119,36 @@ function renderDashboard(id) {
     const dashboard = document.getElementById('dashboard');
     let html = '';
 
+    // Ambient Image Card (Flow Mode)
+    if (state.mode === 'flow' && data.ambient) {
+        html += `
+            <div class="ambient-card">
+                <img src="${data.ambient.image}" class="ambient-img">
+                <div class="ambient-info">
+                    <div class="ambient-title">${data.ambient.title}</div>
+                    <div class="ambient-desc">${data.ambient.desc}</div>
+                    <div style="margin-top:5px; font-size:0.8rem; color:#888;">${data.ambient.mood}</div>
+                </div>
+            </div>
+        `;
+    }
+
     // ================= FLOW MODE =================
-    // ================= FLOW MODE =================
-    if (state.mode === 'flow') {
-        // Empty dashboard for Flow mode (Panel is hidden via CSS)
-        dashboard.innerHTML = '';
+    if (state.mode === 'flow' && !data.ambient) {
+        // Keep empty if no ambient data, or maybe show a default?
+        // dashboard.innerHTML = ''; 
+        // Actually, if we want ambient image to show, we must NOT return early above.
+        // Let's refactor: Flow mode CAN show ambient card.
+    } else if (state.mode === 'flow') {
+        // If we have content (ambient), let it render.
+        // But we need to clear previous content if any? 
+        dashboard.innerHTML = html;
+        if (!html) dashboard.innerHTML = '';
         return;
     }
 
     // ================= LEARN MODE =================
-    // Removed 'else' because we return early for flow mode creates a cleaner flow
-    // Filter by Vocabulary Level (NOT Scaffolding Level)
+    // Filter by Vocabulary Level
     const threshold = vocabMap[state.vocabLevel] || 1;
     const activePoints = data.knowledge.filter(k => k.diff >= threshold);
 
@@ -137,10 +156,6 @@ function renderDashboard(id) {
     // Knowledge Cards
     if (activePoints.length > 0) {
         let cardsHtml = activePoints.map(k => {
-            // New Mapping:
-            // Lv 1 & 2: Reveal Mode (Show all) - Learn Mode Lv2 now shows full details
-            // Lv 3: Guess Mode (Socratic Blur) - Only Lv3 hides defs
-
             const isGuessMode = (state.level >= 3) && !state.revealedKeys.includes(k.key);
             const modeClass = isGuessMode ? 'k-guess-mode' : 'k-reveal-mode';
 
@@ -215,18 +230,12 @@ function syncHighlightsInText(id) {
                 const tip = document.createElement('div');
                 tip.className = 'peek-tooltip';
 
-                // Logic based on Scaffolding Level (1-3)
-                // Lv 1: Support - Chinese Definition
-                // Lv 2: Scaffold - English Hint (Click to Reveal Chinese)
-                // Lv 3: Challenge - IPA Only (Double Click to Reveal Chinese)
-
                 if (state.level === 1) {
                     // Support: Direct Chinese
                     tip.innerText = k.def.split('；')[0];
                 } else if (state.level === 2) {
                     // Scaffold: Hint / Clue
                     tip.innerText = k.clue || "Hint?";
-                    // Click to reveal logic needs to happen on the SPAN trigger
                     span.onclick = (e) => {
                         e.stopPropagation();
                         tip.innerText = k.def.split('；')[0];
@@ -235,12 +244,10 @@ function syncHighlightsInText(id) {
                 } else if (state.level === 3) {
                     // Challenge: IPA Only
                     tip.innerText = k.ipa || "...";
-                    // Double click to reveal
                     span.ondblclick = (e) => {
                         e.stopPropagation();
                         tip.innerText = k.def.split('；')[0];
                     };
-                    // Single click might just play audio (mock) or do nothing
                 }
 
                 span.appendChild(tip);
@@ -248,37 +255,29 @@ function syncHighlightsInText(id) {
 
             // Learn Mode: Special Text Handlers
             if (state.mode === 'learn') {
-                // Reverse Highlighting: Hover Text -> Highlight Card
                 span.onmouseenter = () => highlightCard(k.key);
                 span.onmouseleave = () => unhighlightCard(k.key);
 
-                // Remove any existing inline defs first to be safe (handled by general reset above, but innerHTML might persist if appended)
-                // Actually the reset above "remove 'has-card'" doesn't remove appended children. 
-                // We need to ensure we don't duplicate.
                 if (span.querySelector('.inline-def-tag')) span.querySelector('.inline-def-tag').remove();
                 if (span.querySelector('.peek-tooltip')) span.querySelector('.peek-tooltip').remove();
 
 
                 if (state.level === 1) {
-                    // Lv 1: Show Chinese Definition IN PLACE (Inline)
                     const defTag = document.createElement('span');
                     defTag.className = 'inline-def-tag';
                     defTag.innerText = ` ${k.def.split('；')[0]}`;
                     span.appendChild(defTag);
                 } else if (state.level === 2) {
-                    // Lv 2: Show Chinese Definition ON HOVER
                     const tip = document.createElement('div');
-                    tip.className = 'peek-tooltip'; // Reuse tooltip style
+                    tip.className = 'peek-tooltip';
                     tip.innerText = k.def.split('；')[0];
                     span.appendChild(tip);
                 }
-                // Lv 3 (Default): Highlight only, interact via Dashboard (No inline/hover text needed, or maybe just IPA?)
-                // Keeping Lv 3 clean for now as per "Immersion" logic.
             }
         }
     });
 
-    setTimeout(updateMarkerPosition, 50); // Ensure layout is settled
+    setTimeout(updateMarkerPosition, 50);
 }
 
 window.highlightWord = function (key) {
@@ -294,18 +293,10 @@ window.unhighlightWord = function (key) {
 
 window.highlightCard = function (key) {
     if (state.mode !== 'learn') return;
-    // Find the card in the dashboard? Dashboard is rebuilt often but usually stable when reading.
-    // We need to match by something? Wait, `renderDashboard` creates cards but key isn't stored in attribute?
-    // Let's check `renderDashboard`. It passes `key` to `onclick` but maybe add `data-key` attribute to `.knowledge-item`?
-    // Since I can't easily change renderDashboard in this tool call without replacing it all, 
-    // I will assume I need to ADD data-key to renderDashboard first or try to find by onclick content? 
-    // No, better to update renderDashboard.
-    // BUT, I can select by onclick attribute as a hack or better yet, I should update `renderDashboard` separately.
-    // For now, I'll add the functions and placeholder logic, then update renderDashboard in next step.
     const card = document.querySelector(`.knowledge-item[data-key="${key}"]`);
     if (card) {
         card.classList.add('active-card-highlight');
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Auto-scroll to card!
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 window.unhighlightCard = function (key) {
@@ -321,16 +312,303 @@ window.toggleTrans = function (e, id) {
     setTimeout(updateMarkerPosition, 300);
 }
 
-// 滚动监听
-// 滚动监听
+// --- Audio Player Logic with Karaoke Mode ---
+// Feature flag: set to true to enable karaoke word highlighting
+const KARAOKE_ENABLED = false;
+
+let currentAudio = null;
+let currentAudioQueue = [];
+let currentQueueIndex = 0;
+let karaokeInterval = null;
+let karaokeWords = [];
+let karaokeWordIndex = 0;
+let currentPlayingId = null;
+
+// Speed control
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+const speedControl = document.getElementById('speedControl');
+
+if (speedSlider) {
+    speedSlider.addEventListener('input', (e) => {
+        const rate = parseFloat(e.target.value);
+        speedLabel.textContent = rate + 'x';
+        if (currentAudio) {
+            currentAudio.playbackRate = rate;
+        }
+    });
+}
+
+window.playAudio = function (e, id) {
+    e.stopPropagation();
+
+    // Stop any existing audio
+    stopAudio();
+
+    const data = bookData[id];
+    if (!data || !data.audio) {
+        alert("No audio available for this paragraph.");
+        return;
+    }
+
+    currentPlayingId = id;
+    const btn = e.currentTarget;
+    btn.classList.add('playing');
+
+    // Show speed control
+    if (speedControl) speedControl.classList.add('show');
+
+    // Prepare karaoke words from paragraph text (if enabled)
+    if (KARAOKE_ENABLED) {
+        const paraEl = document.querySelector(`.paragraph[data-id="${id}"] .para-text`);
+        if (paraEl) {
+            prepareKaraokeWords(paraEl);
+        }
+    }
+
+    // Check if it's an array (Dialogue) or string
+    if (Array.isArray(data.audio)) {
+        currentAudioQueue = data.audio;
+        currentQueueIndex = 0;
+        playQueueWithKaraoke(btn, id);
+    } else {
+        playOneFileWithKaraoke(data.audio, btn, id);
+    }
+};
+
+function prepareKaraokeWords(paraEl) {
+    // Clear previous highlights
+    clearKaraokeHighlights();
+
+    // Get existing word spans or wrap text in spans
+    karaokeWords = [];
+
+    // Walk through the paragraph and collect all words
+    const walker = document.createTreeWalker(paraEl, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    while (walker.nextNode()) {
+        textNodes.push(walker.currentNode);
+    }
+
+    // For each text node, wrap words in spans
+    textNodes.forEach(node => {
+        const text = node.textContent;
+        const words = text.split(/(\s+)/); // Keep whitespace
+
+        if (words.length > 1 || (words.length === 1 && words[0].trim())) {
+            const fragment = document.createDocumentFragment();
+            words.forEach(word => {
+                if (word.trim()) {
+                    const span = document.createElement('span');
+                    span.className = 'karaoke-word';
+                    span.textContent = word;
+                    fragment.appendChild(span);
+                    karaokeWords.push(span);
+                } else {
+                    fragment.appendChild(document.createTextNode(word));
+                }
+            });
+            node.parentNode.replaceChild(fragment, node);
+        }
+    });
+}
+
+function playOneFileWithKaraoke(url, btn, id) {
+    currentAudio = new Audio(url);
+    currentAudio.playbackRate = parseFloat(speedSlider?.value || 1);
+
+    currentAudio.addEventListener('loadedmetadata', () => {
+        startKaraokeSync(currentAudio.duration);
+    });
+
+    currentAudio.onended = () => {
+        stopKaraoke();
+        btn.classList.remove('playing');
+        if (speedControl) speedControl.classList.remove('show');
+        currentAudio = null;
+        currentPlayingId = null;
+    };
+
+    currentAudio.play();
+}
+
+function playQueueWithKaraoke(btn, id) {
+    if (currentQueueIndex >= currentAudioQueue.length) {
+        stopKaraoke();
+        btn.classList.remove('playing');
+        if (speedControl) speedControl.classList.remove('show');
+        currentAudioQueue = [];
+        currentPlayingId = null;
+        return;
+    }
+
+    const url = currentAudioQueue[currentQueueIndex];
+    currentAudio = new Audio(url);
+    currentAudio.playbackRate = parseFloat(speedSlider?.value || 1);
+
+    // For queue, we need to estimate words per segment
+    // Simplification: divide remaining words by remaining segments
+    currentAudio.addEventListener('loadedmetadata', () => {
+        const remainingSegments = currentAudioQueue.length - currentQueueIndex;
+        const wordsPerSegment = Math.ceil((karaokeWords.length - karaokeWordIndex) / remainingSegments);
+        const segmentWords = karaokeWords.slice(karaokeWordIndex, karaokeWordIndex + wordsPerSegment);
+        startKaraokeSync(currentAudio.duration, segmentWords);
+    });
+
+    currentAudio.onended = () => {
+        currentQueueIndex++;
+        playQueueWithKaraoke(btn, id);
+    };
+
+    currentAudio.play();
+}
+
+function startKaraokeSync(duration, wordSubset = null) {
+    const words = wordSubset || karaokeWords;
+    if (words.length === 0) return;
+
+    const baseInterval = (duration * 1000) / words.length;
+    let localIndex = 0;
+
+    // Clear any existing interval
+    if (karaokeInterval) clearInterval(karaokeInterval);
+
+    // Highlight first word immediately
+    if (words[0]) words[0].classList.add('karaoke-highlight');
+
+    karaokeInterval = setInterval(() => {
+        const rate = currentAudio?.playbackRate || 1;
+        const adjustedInterval = baseInterval / rate;
+
+        // Remove highlight from current word
+        if (words[localIndex]) {
+            words[localIndex].classList.remove('karaoke-highlight');
+        }
+
+        localIndex++;
+        karaokeWordIndex++;
+
+        // Highlight next word
+        if (localIndex < words.length && words[localIndex]) {
+            words[localIndex].classList.add('karaoke-highlight');
+
+            // Scroll word into view if needed
+            words[localIndex].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+
+        if (localIndex >= words.length) {
+            clearInterval(karaokeInterval);
+            karaokeInterval = null;
+        }
+    }, baseInterval);
+}
+
+function stopKaraoke() {
+    if (karaokeInterval) {
+        clearInterval(karaokeInterval);
+        karaokeInterval = null;
+    }
+    clearKaraokeHighlights();
+    karaokeWords = [];
+    karaokeWordIndex = 0;
+}
+
+function clearKaraokeHighlights() {
+    document.querySelectorAll('.karaoke-highlight').forEach(el => {
+        el.classList.remove('karaoke-highlight');
+    });
+}
+
+function stopAudio() {
+    stopKaraoke();
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+    }
+    if (speedControl) speedControl.classList.remove('show');
+    document.querySelectorAll('.play-btn').forEach(b => b.classList.remove('playing'));
+    currentPlayingId = null;
+}
+
+// --- Mobile Bottom Bar Logic ---
+const mobilePlayBtn = document.getElementById('mobilePlayBtn');
+const mobileAiBtn = document.getElementById('mobileAiBtn');
+const mobilePanelBtn = document.getElementById('mobilePanelBtn');
+const mobileSpeedSlider = document.getElementById('mobileSpeedSlider');
+const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+
+// Mobile Play Button - plays current active paragraph
+if (mobilePlayBtn) {
+    mobilePlayBtn.addEventListener('click', () => {
+        if (!state.activeId) return;
+
+        // Create a mock event for playAudio
+        const playBtn = document.querySelector(`.paragraph[data-id="${state.activeId}"] .play-btn`);
+        if (playBtn) {
+            playBtn.click();
+        }
+    });
+}
+
+// Mobile AI Button - opens AI chat for current paragraph
+if (mobileAiBtn) {
+    mobileAiBtn.addEventListener('click', () => {
+        if (!state.activeId) return;
+
+        const askTrigger = document.querySelector(`.paragraph[data-id="${state.activeId}"] .ask-trigger`);
+        if (askTrigger) {
+            askTrigger.click();
+        }
+    });
+}
+
+// Mobile Panel Button - toggles Learn mode
+if (mobilePanelBtn) {
+    mobilePanelBtn.addEventListener('click', () => {
+        if (state.mode === 'flow') {
+            switchMode('learn');
+            mobilePanelBtn.classList.add('active');
+        } else {
+            switchMode('flow');
+            mobilePanelBtn.classList.remove('active');
+        }
+    });
+}
+
+// Mobile Speed Slider
+if (mobileSpeedSlider) {
+    mobileSpeedSlider.addEventListener('input', (e) => {
+        const rate = parseFloat(e.target.value);
+        if (currentAudio) {
+            currentAudio.playbackRate = rate;
+        }
+        // Sync with desktop slider
+        if (speedSlider) {
+            speedSlider.value = rate;
+            speedLabel.textContent = rate + 'x';
+        }
+    });
+}
+
+// Mobile Settings Button - show/hide floating controls (as modal on mobile)
+if (mobileSettingsBtn) {
+    mobileSettingsBtn.addEventListener('click', () => {
+        // Toggle a settings modal or the floating controls visibility
+        const controls = document.querySelector('.floating-controls');
+        if (controls) {
+            controls.style.display = controls.style.display === 'none' ? 'flex' : 'none';
+        }
+    });
+}
+
+
 const readerPanel = document.getElementById('readerPanel');
-// Remove static `paragraphs` const or make it a function to get current ones.
 
 readerPanel.addEventListener('scroll', () => {
     const checkPoint = window.innerHeight * 0.35;
     let activeEl = null;
 
-    // Dynamically query paragraphs
     const currentParagraphs = document.querySelectorAll('.paragraph');
     if (currentParagraphs.length === 0) return;
 
@@ -341,22 +619,18 @@ readerPanel.addEventListener('scroll', () => {
         }
     });
 
-    // Edge case: No paragraph crosses checkpoint (at top or bottom of scroll)
     if (!activeEl) {
         const firstPara = currentParagraphs[0];
         const lastPara = currentParagraphs[currentParagraphs.length - 1];
         const firstRect = firstPara.getBoundingClientRect();
         const lastRect = lastPara.getBoundingClientRect();
 
-        // If first paragraph is below checkpoint, select it (scrolled to top)
         if (firstRect.top > checkPoint) {
             activeEl = firstPara;
         }
-        // If last paragraph is above checkpoint, select it (scrolled to bottom)
         else if (lastRect.bottom < checkPoint) {
             activeEl = lastPara;
         }
-        // Fallback: find the paragraph closest to checkpoint
         else {
             let minDist = Infinity;
             currentParagraphs.forEach(p => {
@@ -383,36 +657,27 @@ readerPanel.addEventListener('scroll', () => {
     }
 });
 
-// Init
 window.onload = () => {
-    // IMPORTANT: Set body class FIRST to trigger CSS layout
     document.body.className = 'mode-flow';
-
-    // Then initialize state and UI
     state.mode = 'flow';
     state.activeId = 'p1';
     document.querySelector('[data-id="p1"]').classList.add('active');
 
-    // Render initial content
     renderDashboard('p1');
     syncHighlightsInText('p1');
 
-    // Ensure marker updates after layout settles
     setTimeout(updateMarkerPosition, 100);
     updateCollapsedLabel();
     injectAskTriggers();
 
-    // Global click listener to close Ask Bubble
     document.addEventListener('click', (e) => {
         const bubble = document.querySelector('.ask-bubble.show');
         if (bubble && !bubble.contains(e.target) && !e.target.closest('.ask-trigger')) {
             bubble.classList.remove('show');
-            // Reset layout
             document.body.classList.remove('ask-mode');
         }
     });
 
-    // Modal Click Outside
     document.getElementById('importModal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('importModal')) closeImportModal();
     });
@@ -422,29 +687,38 @@ window.onresize = updateMarkerPosition;
 // --- Ask AI Logic ---
 function injectAskTriggers() {
     document.querySelectorAll('.paragraph').forEach(p => {
-        // Prevent double injection
-        if (p.querySelector('.ask-trigger')) return;
+        // Prevent double injection of play button
+        if (p.querySelector('.play-btn')) return;
 
         const id = p.getAttribute('data-id');
 
-        // Trigger Button
-        const btn = document.createElement('div');
-        btn.className = 'ask-trigger';
-        btn.innerHTML = '✨';
-        btn.title = "Ask AI about this paragraph";
-        btn.onclick = (e) => toggleAsk(e, id);
+        // Play Button (Audio) 🔊
+        const playBtn = document.createElement('div');
+        playBtn.className = 'play-btn';
+        playBtn.innerHTML = '🔊';
+        playBtn.title = "Play Audio (Emotional TTS)";
+        playBtn.onclick = (e) => playAudio(e, id);
 
-        // Chat Bubble Container
-        const bubble = document.createElement('div');
-        bubble.className = 'ask-bubble';
-        bubble.id = `ask-bubble-${id}`;
-        bubble.innerHTML = `
-            <div class="ask-history" id="ask-history-${id}"></div>
-            <input type="text" class="ask-input" placeholder="Ask anything..." onkeydown="handleAskInput(event, '${id}')">
-        `;
+        // Ask Trigger Button (AI) ✨
+        if (!p.querySelector('.ask-trigger')) {
+            const btn = document.createElement('div');
+            btn.className = 'ask-trigger';
+            btn.innerHTML = '✨';
+            btn.title = "Ask AI about this paragraph";
+            btn.onclick = (e) => toggleAsk(e, id);
 
-        p.appendChild(btn);
-        p.appendChild(bubble);
+            const bubble = document.createElement('div');
+            bubble.className = 'ask-bubble';
+            bubble.id = `ask-bubble-${id}`;
+            bubble.innerHTML = `
+                <div class="ask-history" id="ask-history-${id}"></div>
+                <input type="text" class="ask-input" placeholder="Ask anything..." onkeydown="handleAskInput(event, '${id}')">
+            `;
+            p.appendChild(btn);
+            p.appendChild(bubble);
+        }
+
+        p.appendChild(playBtn);
     });
 }
 

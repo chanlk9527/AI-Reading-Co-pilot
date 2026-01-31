@@ -1,6 +1,7 @@
 // --- 1. 数据结构 (新增 clue 字段用于苏格拉底提示) ---
 export const bookData = {
     "p1": {
+        audio: "audio/p1_full.mp3",
         knowledge: [
             { key: "truth", diff: 1, word: "Truth", ipa: "/truːθ/", def: "真理；事实", context: "A fact", clue: "Opposite of lie" },
             { key: "universally", diff: 2, word: "Universally", ipa: "/ˌjuː.nɪˈvɜː.səl.i/", def: "普遍地；人人皆知地", context: "Universal truth = 普世真理", clue: "Synonym: Widely, Generally" },
@@ -18,6 +19,7 @@ export const bookData = {
         }
     },
     "p2": {
+        audio: "audio/p2_full.mp3",
         knowledge: [
             { key: "feelings", diff: 1, word: "Feelings", ipa: "/ˈfiː.lɪŋz/", def: "情感", context: "Emotions", clue: "Emotions" },
             { key: "views", diff: 2, word: "Views", ipa: "/vjuːz/", def: "观点", context: "Opinions", clue: "Opinions / Perspectives" },
@@ -35,6 +37,7 @@ export const bookData = {
         }
     },
     "p3": {
+        audio: ["audio/p3_part1.mp3", "audio/p3_part2.mp3", "audio/p3_part3.mp3"],
         knowledge: [
             { key: "heard", diff: 1, word: "Heard", ipa: "/hɜːd/", def: "听说", context: "Past tense of hear", clue: "Listened to" },
             { key: "netherfield", type: "culture", diff: 4, word: "Netherfield Park", ipa: "Place", def: "内瑟菲尔德庄园", context: "Fictional estate name", clue: "Name of the large house nearby" },

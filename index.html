@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Reading Coach: Socratic Edition</title>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="index.css?v=2">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
@@ -157,8 +157,43 @@
         </div>
     </div>
 
+    <!-- Speed Control (shows during playback) -->
+    <div class="speed-control" id="speedControl">
+        <label>🐢</label>
+        <input type="range" id="speedSlider" min="0.5" max="2" step="0.1" value="1">
+        <label>🐇</label>
+        <span id="speedLabel">1x</span>
+    </div>
+
+    <!-- Mobile Bottom Bar (visible on mobile only) -->
+    <div class="mobile-bottom-bar" id="mobileBar">
+        <button class="mobile-bar-btn" id="mobilePlayBtn" title="Play Audio">
+            <span class="bar-icon">🔊</span>
+            <span class="bar-label">Play</span>
+        </button>
+        <div class="mobile-speed-control">
+            <span>🐢</span>
+            <input type="range" id="mobileSpeedSlider" min="0.5" max="2" step="0.1" value="1">
+            <span>🐇</span>
+        </div>
+        <button class="mobile-bar-btn" id="mobileAiBtn" title="Ask AI">
+            <span class="bar-icon">✨</span>
+            <span class="bar-label">AI</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobilePanelBtn" title="Learn Panel">
+            <span class="bar-icon">📚</span>
+            <span class="bar-label">Learn</span>
+        </button>
+    </div>
+
+    <!-- Mobile Header (visible on mobile only) -->
+    <div class="mobile-header" id="mobileHeader">
+        <div class="mobile-header-title">Pride and Prejudice</div>
+        <button class="mobile-header-btn" id="mobileSettingsBtn">⚙️</button>
+    </div>
+
     <script src="js/data.js" type="module"></script>
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=4"></script>
 </body>
 
 </html>
