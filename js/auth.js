@@ -112,7 +112,7 @@ export const textService = {
         if (!response.ok) {
             if (response.status === 401) {
                 authService.logout();
-                window.location.href = '/index.html';
+                window.location.href = '/login.html';
                 return [];
             }
             throw new Error('Failed to fetch texts');
@@ -215,5 +215,25 @@ export const textService = {
         if (!response.ok) {
             throw new Error('Failed to delete text');
         }
+    },
+
+    /**
+     * 更新阅读进度
+     */
+    async updateProgress(id, progressData) {
+        // progressData: { reading_mode, scaffold_level, vocab_level, current_paragraph_id }
+        const response = await fetch(`${API_BASE}/texts/${id}/progress`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...authService.getAuthHeaders(),
+            },
+            body: JSON.stringify(progressData),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to sync progress');
+        }
+        return response.json();
     }
 };

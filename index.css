@@ -591,9 +591,9 @@ body.mode-learn .smart-word.highlighted {
 /* 仪表盘内容区 */
 .dashboard-content {
     flex: 1;
-    flex: 1;
+    min-height: 0;
+    /* Important for flex child scrolling */
     padding: 80px 30px 20px 30px;
-    /* Increased top padding to clear floating controls */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1588,6 +1588,8 @@ body.mode-learn .smart-word.highlighted {
     /* Dashboard in bottom sheet */
     #dashboard {
         padding: 10px 16px 20px;
+        overflow-y: visible;
+        /* Avoid nested scroll */
     }
 
     .module-card {

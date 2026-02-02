@@ -51,6 +51,10 @@ def init_database():
                 user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
+                reading_mode TEXT DEFAULT 'flow', -- flow | learn
+                scaffold_level INTEGER DEFAULT 2,   -- 1, 2, 3
+                vocab_level TEXT DEFAULT 'B1',      -- A1-C2
+                current_paragraph_id INTEGER,       -- ID of last active paragraph
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE

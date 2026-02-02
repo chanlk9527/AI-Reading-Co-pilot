@@ -324,13 +324,13 @@
 
         // Check Auth using updated path
         if (!authService.isLoggedIn()) {
-            window.location.href = '/index.html';
+            window.location.href = '/login.html';
         }
 
         // Logout
         window.handleLogout = () => {
             authService.logout();
-            window.location.href = '/index.html';
+            window.location.href = '/login.html';
         };
 
         // Render Library

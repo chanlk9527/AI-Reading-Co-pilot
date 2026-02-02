@@ -82,6 +82,10 @@ class TextResponse(BaseModel):
     id: int
     title: str
     content: str
+    reading_mode: str = "flow"
+    scaffold_level: int = 2
+    vocab_level: str = "B1"
+    current_paragraph_id: Optional[int] = None
     created_at: str
     updated_at: str
 
@@ -96,6 +100,12 @@ class ParagraphResponse(BaseModel):
 class ParagraphUpdate(BaseModel):
     translation: Optional[str] = None
     analysis: Optional[dict] = None
+
+class TextProgressUpdate(BaseModel):
+    reading_mode: Optional[str] = None
+    scaffold_level: Optional[int] = None
+    vocab_level: Optional[str] = None
+    current_paragraph_id: Optional[int] = None
 
 # TTS
 class TTSRequest(BaseModel):
@@ -261,6 +271,10 @@ async def list_texts(user = Depends(get_current_user)):
                 id=t["id"],
                 title=t["title"],
                 content=t["content"],
+                reading_mode=t["reading_mode"] or "flow",
+                scaffold_level=t["scaffold_level"] or 2,
+                vocab_level=t["vocab_level"] or "B1",
+                current_paragraph_id=t["current_paragraph_id"],
                 created_at=str(t["created_at"]),
                 updated_at=str(t["updated_at"])
             ))
@@ -477,6 +491,10 @@ async def update_text(text_id: int, data: TextUpdate, user = Depends(get_current
             id=t["id"],
             title=t["title"],
             content=t["content"],
+            reading_mode=t["reading_mode"] or "flow",
+            scaffold_level=t["scaffold_level"] or 2,
+            vocab_level=t["vocab_level"] or "B1",
+            current_paragraph_id=t["current_paragraph_id"],
             scaffolding_data=scaffolding,
             created_at=str(t["created_at"]),
             updated_at=str(t["updated_at"])

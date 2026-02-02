@@ -4,13 +4,48 @@ import { ttsService } from './tts.js';
 import { textService, authService } from './auth.js';
 
 // --- 2. 状态管理 ---
-let state = {
+if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+    console.log("Browser scroll restoration disabled.");
+}
+
+const state = {
     mode: 'flow', // 'flow' | 'learn'
     level: 2,     // Scaffolding Level (1-3)
-    vocabLevel: 'A2', // Vocabulary Proficiency (A1-C2)
+    vocabLevel: 'B1', // Vocabulary Proficiency (A1-C2)
     activeId: null,
-    revealedKeys: []
+    revealedKeys: [],
+    isInitializing: true // Flag to prevent progress overwrite during load
 };
+
+// --- Persistence Helpers ---
+function getDocId() {
+    return new URLSearchParams(window.location.search).get('id');
+}
+
+function persistState() {
+    if (state.isInitializing) return;
+    const docId = getDocId();
+    if (!docId) return;
+
+    // Sync to Backend
+    // Convert activeId (e.g., 'db-123') to DB ID (123)
+    let currentParaId = null;
+    if (state.activeId && state.activeId.startsWith('db-')) {
+        currentParaId = parseInt(state.activeId.replace('db-', ''), 10);
+    }
+
+    textService.updateProgress(docId, {
+        reading_mode: state.mode,
+        scaffold_level: state.level,
+        vocab_level: state.vocabLevel,
+        current_paragraph_id: currentParaId
+    });
+
+    console.log(`Synced state to DB for ${docId}:`, state.activeId);
+}
+
+// function loadSavedState() -> Removed, logic moved to data fetching
 
 const vocabMap = {
     'A1': 1,
@@ -40,6 +75,7 @@ function updateCollapsedLabel() {
 // 新增功能：切换模式
 window.switchMode = function (modeName) {
     state.mode = modeName;
+    persistState();
 
     // 1. 更新 Body Class (触发 CSS 变量切换)
     document.body.className = `mode-${modeName}`;
@@ -59,6 +95,7 @@ window.switchMode = function (modeName) {
 
 window.changeLevel = function (lv) {
     state.level = lv;
+    persistState();
     document.getElementById('levelCapsule').setAttribute('data-active', lv);
     document.getElementById('levelDesc').innerText = levelDescs[lv - 1];
 
@@ -88,6 +125,7 @@ window.changeLevel = function (lv) {
 
 window.changeVocabLevel = function (vLevel) {
     state.vocabLevel = vLevel;
+    persistState();
 
     // Update active highlights
     if (state.activeId) {
@@ -662,6 +700,8 @@ if (mobileSettingsBtn) {
 const readerPanel = document.getElementById('readerPanel');
 
 readerPanel.addEventListener('scroll', () => {
+    if (state.isInitializing) return; // Ignore scrolls during restoration
+
     const checkPoint = window.innerHeight * 0.35;
     let activeEl = null;
 
@@ -702,6 +742,7 @@ readerPanel.addEventListener('scroll', () => {
 
     if (activeEl && activeEl.getAttribute('data-id') !== state.activeId) {
         state.activeId = activeEl.getAttribute('data-id');
+        persistState(); // 记录进度
         currentParagraphs.forEach(p => p.classList.remove('active'));
         activeEl.classList.add('active');
 
@@ -731,13 +772,29 @@ window.onload = async () => {
         openImportModal();
     } else if (docId) {
         try {
-            // Load Text Metadata
+            // Load Text Metadata & Progress
             const textData = await textService.getText(docId);
             document.querySelector('.book-title').innerText = textData.title;
+
+            // Apply Saved State from DB
+            if (textData.reading_mode) state.mode = textData.reading_mode;
+            if (textData.scaffold_level) state.level = textData.scaffold_level;
+            if (textData.vocab_level) state.vocabLevel = textData.vocab_level;
+            if (textData.current_paragraph_id) {
+                state.activeId = `db-${textData.current_paragraph_id}`;
+            }
+            console.log("Loaded state from DB:", state);
 
             // Load Paragraphs (Lazy Loading)
             const paragraphs = await textService.getParagraphs(docId);
             renderReader(paragraphs);
+
+            // Apply loaded mode/level/vocab to UI
+            switchMode(state.mode);
+            changeLevel(state.level);
+            if (document.getElementById('vocabSelect')) {
+                document.getElementById('vocabSelect').value = state.vocabLevel;
+            }
 
         } catch (e) {
             console.error("Failed to load text:", e);
@@ -1133,8 +1190,39 @@ function renderReader(paragraphs) {
     reader.appendChild(bottomSpacer);
 
     // Initial Post-Render Setup
-    const firstPara = reader.querySelector('.paragraph');
-    if (firstPara) firstPara.classList.add('active');
+    let activePara = null;
+    const savedId = state.activeId;
+    console.log("Restoring state for ID:", savedId);
+
+    if (savedId) {
+        // Try to find exact match
+        activePara = reader.querySelector(`.paragraph[data-id="${savedId}"]`);
+    }
+
+    if (activePara) {
+        console.log("Found active paragraph:", savedId);
+        activePara.classList.add('active');
+
+        // Scroll to restored position with slightly longer delay to ensure layout stability
+        setTimeout(() => {
+            activePara.scrollIntoView({ behavior: 'auto', block: 'center' });
+
+            // Allow persistence after scroll is definitely done
+            setTimeout(() => {
+                state.isInitializing = false;
+                console.log("Restoration complete, persistence enabled.");
+            }, 300); // Increased safety buffer
+        }, 100);
+    } else {
+        console.warn("Could not find saved paragraph, falling back to start.");
+        activePara = reader.querySelector('.paragraph');
+        if (activePara) {
+            state.activeId = activePara.getAttribute('data-id');
+            activePara.classList.add('active');
+        }
+        // Enable persistence immediately if we just defaulted
+        state.isInitializing = false;
+    }
 
     renderDashboard(state.activeId);
     syncHighlightsInText(state.activeId);
