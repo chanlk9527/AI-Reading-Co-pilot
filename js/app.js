@@ -1,5 +1,7 @@
 import { bookData } from './data.js';
 import { aiService } from './ai.js';
+import { ttsService } from './tts.js';
+import { textService, authService } from './auth.js';
 
 // --- 2. 状态管理 ---
 let state = {
@@ -339,17 +341,11 @@ if (speedSlider) {
     });
 }
 
-window.playAudio = function (e, id) {
+window.playAudio = async function (e, id) {
     e.stopPropagation();
 
     // Stop any existing audio
     stopAudio();
-
-    const data = bookData[id];
-    if (!data || !data.audio) {
-        alert("No audio available for this paragraph.");
-        return;
-    }
 
     currentPlayingId = id;
     const btn = e.currentTarget;
@@ -366,15 +362,75 @@ window.playAudio = function (e, id) {
         }
     }
 
-    // Check if it's an array (Dialogue) or string
-    if (Array.isArray(data.audio)) {
-        currentAudioQueue = data.audio;
-        currentQueueIndex = 0;
-        playQueueWithKaraoke(btn, id);
-    } else {
-        playOneFileWithKaraoke(data.audio, btn, id);
+    // Extract text from paragraph
+    const paraEl = document.querySelector(`.paragraph[data-id="${id}"] .para-text`);
+    if (!paraEl) {
+        alert("Could not find paragraph text.");
+        btn.classList.remove('playing');
+        return;
+    }
+
+    // Get clean text (remove translation toggles and inline elements)
+    const textContent = extractCleanText(paraEl);
+
+    try {
+        // Try real-time TTS first
+        const isServerAvailable = await ttsService.isAvailable();
+
+        if (isServerAvailable) {
+            // Use real-time TTS
+            currentAudio = await ttsService.speak(textContent, 'narrator');
+            currentAudio.playbackRate = parseFloat(speedSlider?.value || 1);
+
+            currentAudio.addEventListener('loadedmetadata', () => {
+                startKaraokeSync(currentAudio.duration);
+            });
+
+            currentAudio.onended = () => {
+                stopKaraoke();
+                btn.classList.remove('playing');
+                if (speedControl) speedControl.classList.remove('show');
+                currentAudio = null;
+                currentPlayingId = null;
+            };
+
+            currentAudio.play();
+        } else {
+            // Fallback to pre-generated audio if available
+            const data = bookData[id];
+            if (data && data.audio) {
+                if (Array.isArray(data.audio)) {
+                    currentAudioQueue = data.audio;
+                    currentQueueIndex = 0;
+                    playQueueWithKaraoke(btn, id);
+                } else {
+                    playOneFileWithKaraoke(data.audio, btn, id);
+                }
+            } else {
+                alert("TTS server unavailable. Please start the server with ./start_server.sh");
+                btn.classList.remove('playing');
+                if (speedControl) speedControl.classList.remove('show');
+            }
+        }
+    } catch (error) {
+        console.error('Audio playback error:', error);
+        alert("Failed to play audio: " + error.message);
+        btn.classList.remove('playing');
+        if (speedControl) speedControl.classList.remove('show');
     }
 };
+
+// Helper function to extract clean text from paragraph
+function extractCleanText(paraEl) {
+    // Clone to avoid modifying the original
+    const clone = paraEl.cloneNode(true);
+
+    // Remove translation toggles and inline translations
+    clone.querySelectorAll('.trans-toggle, .inline-trans, .peek-tooltip, .inline-def-tag').forEach(el => el.remove());
+
+    // Get text content and clean up whitespace
+    return clone.textContent.replace(/\s+/g, ' ').trim();
+}
 
 function prepareKaraokeWords(paraEl) {
     // Clear previous highlights
@@ -657,18 +713,51 @@ readerPanel.addEventListener('scroll', () => {
     }
 });
 
-window.onload = () => {
+window.onload = async () => {
     document.body.className = 'mode-flow';
     state.mode = 'flow';
-    state.activeId = 'p1';
-    document.querySelector('[data-id="p1"]').classList.add('active');
 
-    renderDashboard('p1');
-    syncHighlightsInText('p1');
-
-    setTimeout(updateMarkerPosition, 100);
     updateCollapsedLabel();
     injectAskTriggers();
+
+    // Check URL Params
+    const urlParams = new URLSearchParams(window.location.search);
+    const docId = urlParams.get('id');
+    const isNew = urlParams.get('new');
+
+    if (isNew) {
+        // Clear default content securely
+        document.querySelector('.reader-content').innerHTML = '';
+        openImportModal();
+    } else if (docId) {
+        try {
+            // Load Text Metadata
+            const textData = await textService.getText(docId);
+            document.querySelector('.book-title').innerText = textData.title;
+
+            // Load Paragraphs (Lazy Loading)
+            const paragraphs = await textService.getParagraphs(docId);
+            renderReader(paragraphs);
+
+        } catch (e) {
+            console.error("Failed to load text:", e);
+            if (e.message.includes('401') || e.message.includes('Failed')) {
+                if (confirm("Authentication required. Go to login?")) {
+                    window.location.href = '/login.html';
+                }
+            }
+        }
+    } else {
+        // Default Logic (Pride and Prejudice)
+        state.activeId = 'p1';
+        const p1 = document.querySelector('[data-id="p1"]');
+        if (p1) p1.classList.add('active');
+        renderDashboard('p1');
+        syncHighlightsInText('p1');
+        setTimeout(updateMarkerPosition, 100);
+    }
+
+    setTimeout(updateMarkerPosition, 100);
 
     document.addEventListener('click', (e) => {
         const bubble = document.querySelector('.ask-bubble.show');
@@ -882,7 +971,7 @@ window.switchTab = function (tab) {
     document.getElementById(`tab-${tab}`).classList.add('active');
 };
 
-window.processImport = function () {
+window.processImport = async function () {
     const isText = document.getElementById('tab-text').classList.contains('active');
     const loading = document.getElementById('importLoading');
     loading.classList.remove('hidden');
@@ -894,27 +983,27 @@ window.processImport = function () {
             return;
         }
 
-        // Call AI
-        aiService.analyzeText(rawText)
-            .then(data => {
+        try {
+            // New Lazy Loading Logic: Just save text and redirect
+            if (textService && authService.isLoggedIn()) {
+                const title = rawText.split('\n')[0].substring(0, 50).trim() || "New Import";
+                const savedText = await textService.createText(title, rawText);
+
+                // Redirect/Refresh to load with new lazy logic
                 loading.classList.add('hidden');
                 closeImportModal();
 
-                if (data && data.paragraphs) {
-                    loadAIContent(data.paragraphs);
-                } else {
-                    alert("AI Analysis failed to return valid structure.");
-                }
-            })
-            .catch(err => {
+                const newUrl = `${window.location.pathname}?id=${savedText.id}`;
+                window.location.href = newUrl;
+            } else {
+                alert("Please log in to import texts.");
                 loading.classList.add('hidden');
-                console.error(err);
-                if (err.message.includes("Key is missing")) {
-                    requestApiKey();
-                } else {
-                    alert("Detailed Error: " + err.message);
-                }
-            });
+            }
+        } catch (err) {
+            loading.classList.add('hidden');
+            console.error(err);
+            alert("Error: " + (err.message || "Unknown error"));
+        }
     } else {
         // URL Mode (Mock)
         setTimeout(() => {
@@ -925,94 +1014,95 @@ window.processImport = function () {
     }
 };
 
-function loadAIContent(paragraphs) {
+// --- 3. Reader Render Logic (Lazy Loading) ---
+
+let lazyObserver = null;
+
+function renderReader(paragraphs) {
     const reader = document.querySelector('.reader-content');
     reader.innerHTML = '';
 
-    // Re-create Focus Marker (was deleted by innerHTML = '')
+    // Re-create Focus Marker
     const marker = document.createElement('div');
     marker.className = 'focus-marker';
     marker.id = 'focusMarker';
     reader.appendChild(marker);
 
-    // Clear existing bookData import entries if we want fresh start, or append?
-    // For demo, let's overwrite/append but maybe use unique IDs.
-    // Let's use 'import-pX' IDs.
+    // Initial Active ID
+    const firstId = paragraphs.length > 0 ? `db-${paragraphs[0].id}` : 'import-p0';
+    state.activeId = firstId;
 
-    paragraphs.forEach((pData, index) => {
-        const id = `import-p${index}`;
+    // Reset Observer
+    if (lazyObserver) lazyObserver.disconnect();
+    lazyObserver = new IntersectionObserver(handleLazyLoad, {
+        root: reader.parentElement,
+        rootMargin: '100px 0px 100px 0px', // Preload 100px ahead
+        threshold: 0.1
+    });
+
+    paragraphs.forEach((p, index) => {
+        const id = `db-${p.id}`; // Frontend ID prefix
 
         // 1. Update Global Data
         bookData[id] = {
-            knowledge: pData.knowledge || [],
-            insight: pData.insight || { tag: "Analysis", text: "No insight available." },
-            ambient: null,
-            translation: pData.translation || "Translation not available."
+            knowledge: p.analysis ? p.analysis.knowledge : [],
+            insight: p.analysis ? p.analysis.insight : null,
+            translation: p.translation || "Translation loading..."
         };
 
         // 2. Render DOM
         const div = document.createElement('div');
         div.className = 'paragraph';
         div.setAttribute('data-id', id);
+        div.setAttribute('data-db-id', p.id);
+        div.setAttribute('data-raw-text', p.content);
+        div.setAttribute('data-analyzed', p.analysis ? 'true' : 'false');
 
-        // Inject Text with scaffolding spans
+        // If analyzed, render smart content; else raw text
         const pText = document.createElement('div');
         pText.className = 'para-text';
 
-        // We need to wrap keywords in spans.
-        // Simple string replacement might be buggy if words overlap. 
-        // For demo, we sort keywords by length (longest first) to avoid partial replacement issues? -> No, overlapping issues.
-        // Better: Split text by keywords? 
-        // OR: Just use simple replacement for now, assuming keywords are distinct enough.
+        if (p.analysis) {
+            pText.innerHTML = generateSmartText(p.content, p.analysis.knowledge);
+        } else {
+            pText.innerText = p.content; // Raw text placeholder
+            div.classList.add('pending-analysis');
+        }
 
-        let htmlContent = pData.text;
-        // Sort knowledge by length desc to prevent "University" replacing "Universe" inside it?
-        // Actually, simple replacement is risky.
-        // But let's try a regex approach with word boundaries.
-
-        // Sort by length to prioritize longer phrases
-        const sortedKeys = [...(pData.knowledge || [])].sort((a, b) => b.word.length - a.word.length);
-
-        sortedKeys.forEach(k => {
-            // Escape regex special chars in word
-            const safeWord = k.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Case insensitive match, but preserve original case in text? 
-            // We want to wrap the MATCHED text.
-            const regex = new RegExp(`\\b(${safeWord})\\b`, 'gi');
-            htmlContent = htmlContent.replace(regex, `<span class="smart-word" data-key="${k.key}">$1</span>`);
-        });
-
-        pText.innerHTML = htmlContent;
         div.appendChild(pText);
 
         // Add Translation (Hidden by default)
         const transDiv = document.createElement('div');
         transDiv.className = 'inline-trans';
         transDiv.id = `trans-${id}`;
-        transDiv.innerText = bookData[id].translation;
+        transDiv.innerText = p.translation || "";
         div.appendChild(transDiv);
 
-        // Add Ask Trigger AND Translation Toggle
-        const btn = document.createElement('div');
-        btn.className = 'ask-trigger';
-        // We can stack buttons or make it a specific one.
-        // For now, let's keep the '✨' but maybe add a small translation icon next to it?
-        // Or better, let's inject a separate toggle button for translation, 
-        // consistent with the main app design (e.g. a small '译' icon floating).
-        // Let's create a container for floating actions if needed, or just Absolute position.
-
+        // Add Controls
         const transBtn = document.createElement('div');
         transBtn.className = 'trans-toggle';
         transBtn.innerHTML = '译';
-        transBtn.title = "Toggle Translation";
         transBtn.onclick = (e) => toggleTrans(e, id);
         div.appendChild(transBtn);
 
-        btn.innerHTML = '✨';
-        btn.title = "Ask AI about this paragraph";
-        btn.onclick = (e) => toggleAsk(e, id);
+        // Ask Trigger & Bubble will be injected by injectAskTriggers later 
+        // OR we can do it here. Let's rely on injectAskTriggers called after render.
+        // Actually injectAskTriggers looks for .paragraph, so we can call it once after render.
+        // But for consistency let's just add basic structure here or let the global init do it.
+        // Global init `onload` calls `injectAskTriggers`, but that's only for initial static content.
+        // So we should add controls here manually as we are generating dynamic content.
 
-        // Add Chat Bubble Structure
+        // ... (Reusing logic from injectAskTriggers to avoid duplication is better, 
+        // but for now let's inline essentially what injectAskTriggers does)
+
+        // Ask Trigger
+        const btn = document.createElement('div');
+        btn.className = 'ask-trigger';
+        btn.innerHTML = '✨';
+        btn.onclick = (e) => toggleAsk(e, id);
+        div.appendChild(btn);
+
+        // Bubble
         const bubble = document.createElement('div');
         bubble.className = 'ask-bubble';
         bubble.id = `ask-bubble-${id}`;
@@ -1020,34 +1110,124 @@ function loadAIContent(paragraphs) {
             <div class="ask-history" id="ask-history-${id}"></div>
             <input type="text" class="ask-input" placeholder="Ask anything..." onkeydown="handleAskInput(event, '${id}')">
         `;
-
-        div.appendChild(btn);
         div.appendChild(bubble);
+
+        // Play Button
+        const playBtn = document.createElement('div');
+        playBtn.className = 'play-btn';
+        playBtn.innerHTML = '🔊';
+        playBtn.onclick = (e) => playAudio(e, id);
+        div.appendChild(playBtn);
 
         reader.appendChild(div);
 
-        // Observer - Removed (Using scroll listener)
-        // observer.observe(div);
+        // Observe for Lazy Loading
+        if (!p.analysis) {
+            lazyObserver.observe(div);
+        }
     });
 
-    // Add spacer at bottom for scroll padding (so last paragraph can scroll to checkpoint)
+    // Add Spacer
     const bottomSpacer = document.createElement('div');
     bottomSpacer.style.height = '60vh';
     reader.appendChild(bottomSpacer);
 
-    // Reset state to first paragraph
-    state.activeId = `import-p0`;
-    // Mark first paragraph as active
+    // Initial Post-Render Setup
     const firstPara = reader.querySelector('.paragraph');
     if (firstPara) firstPara.classList.add('active');
 
-    // We need to manually trigger active update because scroll event might not happen yet
-    renderDashboard('import-p0');
-    syncHighlightsInText('import-p0');
+    renderDashboard(state.activeId);
+    syncHighlightsInText(state.activeId);
     updateMarkerPosition();
+}
 
-    // Scroll to top
-    document.getElementById('readerPanel').scrollTo(0, 0);
+function generateSmartText(rawText, knowledge) {
+    let htmlContent = rawText;
+    const sortedKeys = [...(knowledge || [])].sort((a, b) => b.word.length - a.word.length);
+    sortedKeys.forEach(k => {
+        const safeWord = k.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b(${safeWord})\\b`, 'gi');
+        htmlContent = htmlContent.replace(regex, `<span class="smart-word" data-key="${k.key}">$1</span>`);
+    });
+    return htmlContent;
+}
+
+// Lazy Load Handler
+function handleLazyLoad(entries, observer) {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const div = entry.target;
+            const dbId = div.getAttribute('data-db-id');
+            const rawText = div.getAttribute('data-raw-text');
+
+            // Trigger Analysis
+            analyzeParagraph(div, dbId, rawText);
+
+            // Stop observing immediately to prevent double calls
+            observer.unobserve(div);
+        }
+    });
+}
+
+async function analyzeParagraph(div, dbId, rawText) {
+    // Show loading state
+    div.classList.add('analyzing');
+
+    try {
+        console.log(`Analyzing paragraph ${dbId}...`);
+        const data = await aiService.analyzeText(rawText);
+
+        if (data && data.paragraphs && data.paragraphs.length > 0) {
+            // MERGE Logic: Handle case where AI splits one DB paragraph into multiple sentences
+            const pData = data.paragraphs.reduce((acc, curr, index) => {
+                if (index === 0) return { ...curr }; // Clone first
+                return {
+                    text: acc.text + ' ' + curr.text,
+                    translation: acc.translation + ' ' + curr.translation,
+                    knowledge: [...(acc.knowledge || []), ...(curr.knowledge || [])],
+                    insight: acc.insight // Keep first insight as main theme
+                };
+            }, {});
+
+            // 1. Save to Backend
+            await textService.updateParagraph(dbId, pData, pData.translation);
+
+            // 2. Update DOM
+            const id = div.getAttribute('data-id');
+
+            // Update Global Data
+            bookData[id] = {
+                knowledge: pData.knowledge || [],
+                insight: pData.insight || null,
+                translation: pData.translation
+            };
+
+            // Update Text HTML
+            const pText = div.querySelector('.para-text');
+            // Use original rawText if pData.text is different/shorter? 
+            // Better use pData.text as it might have corrected spacing, but rawText is safer for matching.
+            // Actually, we should use rawText but apply knowledge.
+            pText.innerHTML = generateSmartText(pData.text || rawText, pData.knowledge);
+
+            // Update Translation
+            const transDiv = div.querySelector('.inline-trans');
+            transDiv.innerText = pData.translation || "";
+
+            // Remove pending state
+            div.classList.remove('pending-analysis');
+            div.setAttribute('data-analyzed', 'true');
+
+            // Refresh Dashboard if this is active
+            if (state.activeId === id) {
+                renderDashboard(id);
+            }
+        }
+    } catch (err) {
+        console.error("Analysis Failed:", err);
+        // Retry logic could go here
+    } finally {
+        div.classList.remove('analyzing');
+    }
 }
 
 function loadUrlContent() {

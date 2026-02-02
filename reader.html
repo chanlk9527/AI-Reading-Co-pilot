@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Reading Coach: Socratic Edition</title>
+    <link rel="stylesheet" href="index.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Top Right Floating Controls -->
+    <div class="floating-controls">
+        <div class="control-blur-bg"></div>
+
+        <!-- Collapsed View (Visible by default) -->
+        <div class="control-collapsed-view">
+            <span id="collapsedLabel">Flow • Lv2</span>
+        </div>
+
+        <!-- Expanded View (Visible on hover) -->
+        <div class="control-expanded-content">
+            <div class="control-inner">
+                <a href="/library.html" class="import-btn"
+                    style="text-decoration:none; display:flex; align-items:center; justify-content:center; margin-right:5px;"
+                    title="Back to Library">
+                    🔙
+                </a>
+                <button class="import-btn" onclick="openImportModal()" title="Import Content">
+                    📥
+                </button>
+                <div class="mode-switcher compact">
+                    <button class="mode-btn active" onclick="switchMode('flow')" id="btn-flow">
+                        ☕️ Flow
+                    </button>
+                    <button class="mode-btn" onclick="switchMode('learn')" id="btn-learn">
+                        🎓 Learn
+                    </button>
+                </div>
+
+                <div class="level-capsule small" id="levelCapsule" data-active="2">
+                    <div class="capsule-indicator"></div>
+                    <!-- Shortened labels for compact view -->
+                    <button class="capsule-btn" onclick="changeLevel(1)">1</button>
+                    <button class="capsule-btn active-text" onclick="changeLevel(2)">2</button>
+                    <button class="capsule-btn" onclick="changeLevel(3)">3</button>
+                </div>
+
+                <!-- New Vocab Level Selector -->
+                <div class="vocab-selector-row"
+                    style="margin-left: 10px; display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 11px; opacity: 0.6; font-weight: 500;">VOCAB</span>
+                    <select id="vocabSelect" onchange="changeVocabLevel(this.value)"
+                        style="background: rgba(0,0,0,0.05); color: #2C3E50; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 4px 2px; font-size: 12px; font-weight: 600; cursor: pointer; outline: none;">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1" selected>B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="level-info" id="levelDesc" style="text-align: right; padding-right: 5px;">Intermediate</div>
+        </div>
+    </div>
+
+    <!-- Main Reader Panel (Flex Item 1) -->
+    <div class="reader-panel" id="readerPanel">
+        <div class="reader-content">
+            <div class="focus-marker" id="focusMarker"></div>
+            <!-- ... Content ... -->
+            <div class="book-title">Pride and Prejudice</div>
+
+            <div class="paragraph" data-id="p1">
+                <div class="para-text">
+                    It is a <span class="smart-word" data-key="truth">truth</span> <span class="smart-word"
+                        data-key="universally">universally</span> <span class="smart-word"
+                        data-key="acknowledged">acknowledged</span>, that
+                    a <span class="smart-word" data-key="single">single</span> man in <span class="smart-word"
+                        data-key="possession">possession</span> of a good <span class="smart-word"
+                        data-key="fortune">fortune</span>, must be in <span class="smart-word"
+                        data-key="want">want</span> of a <span class="smart-word" data-key="wife">wife</span>.
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p1')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p1">
+                    凡是有钱的单身汉，总想娶位太太，这已经成了一条举世公认的真理。
+                </div>
+            </div>
+
+            <div class="paragraph" data-id="p2">
+                <div class="para-text">
+                    However little known the <span class="smart-word" data-key="feelings">feelings</span> or <span
+                        class="smart-word" data-key="views">views</span> of such a man may be on his first <span
+                        class="smart-word" data-key="entering">entering</span> a <span class="smart-word"
+                        data-key="neighbourhood">neighbourhood</span>, this truth is so well
+                    <span class="smart-word" data-key="fixed">fixed</span> in the <span class="smart-word"
+                        data-key="minds">minds</span> of the surrounding <span class="smart-word"
+                        data-key="families">families</span>, that he is considered the rightful <span class="smart-word"
+                        data-key="property">property</span> of some one or other of their <span class="smart-word"
+                        data-key="daughters">daughters</span>.
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p2')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p2">
+                    虽然这人初来乍到，谁都不了解他的性情见解，但这真理早已在邻居心目中根深蒂固，认为他理所应当时某家女儿的财产。
+                </div>
+            </div>
+
+            <div class="paragraph" data-id="p3">
+                <div class="para-text">
+                    "My dear Mr. Bennet," said his lady to him one day, "have you <span class="smart-word"
+                        data-key="heard">heard</span> that <span class="smart-word" data-key="netherfield">Netherfield
+                        Park</span> is <span class="smart-word" data-key="let">let</span> at last?"
+                    <span class="trans-toggle" onclick="toggleTrans(event, 'p3')">🇨🇳</span>
+                </div>
+                <div class="inline-trans" id="trans-p3">
+                    “亲爱的贝内特先生，”有一天他太太对他说，“你听说内瑟菲尔德庄园终于租出去了吗？”
+                </div>
+            </div>
+
+            <div style="height: 60vh;"></div>
+        </div>
+    </div>
+
+    <!-- Side Panel (Flex Item 2, hidden in Flow Mode) -->
+    <div class="copilot-panel" id="copilotPanel">
+        <!-- Control header removed from here -->
+
+        <div class="dashboard-content" id="dashboard">
+            <!-- Content Injected by JS -->
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>✨ Smart Import</h2>
+            <div class="import-tabs">
+                <button class="tab-btn active" onclick="switchTab('text')">Text Paste</button>
+                <button class="tab-btn" onclick="switchTab('url')">URL Fetch</button>
+            </div>
+
+            <div id="tab-text" class="tab-pane active">
+                <textarea id="importText" placeholder="Paste your article here..."></textarea>
+            </div>
+
+            <div id="tab-url" class="tab-pane">
+                <input type="text" id="importUrl" placeholder="https://example.com/article">
+                <p class="hint-text">Paste a URL to automatically extract and scaffold content.</p>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn-primary" onclick="processImport()">Magic Enhance 🪄</button>
+            </div>
+            <div id="importLoading" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p>AI is digesting content...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speed Control (shows during playback) -->
+    <div class="speed-control" id="speedControl">
+        <label>🐢</label>
+        <input type="range" id="speedSlider" min="0.5" max="2" step="0.1" value="1">
+        <label>🐇</label>
+        <span id="speedLabel">1x</span>
+    </div>
+
+    <!-- Mobile Bottom Bar (visible on mobile only) -->
+    <div class="mobile-bottom-bar" id="mobileBar">
+        <button class="mobile-bar-btn" id="mobilePlayBtn" title="Play Audio">
+            <span class="bar-icon">🔊</span>
+            <span class="bar-label">Play</span>
+        </button>
+        <div class="mobile-speed-control">
+            <span>🐢</span>
+            <input type="range" id="mobileSpeedSlider" min="0.5" max="2" step="0.1" value="1">
+            <span>🐇</span>
+        </div>
+        <button class="mobile-bar-btn" id="mobileAiBtn" title="Ask AI">
+            <span class="bar-icon">✨</span>
+            <span class="bar-label">AI</span>
+        </button>
+        <button class="mobile-bar-btn" id="mobilePanelBtn" title="Learn Panel">
+            <span class="bar-icon">📚</span>
+            <span class="bar-label">Learn</span>
+        </button>
+    </div>
+
+    <!-- Mobile Header (visible on mobile only) -->
+    <div class="mobile-header" id="mobileHeader">
+        <div class="mobile-header-title">Pride and Prejudice</div>
+        <button class="mobile-header-btn" id="mobileSettingsBtn">⚙️</button>
+    </div>
+
+    <script src="js/data.js" type="module"></script>
+    <script type="module" src="js/app.js?v=4"></script>
+</body>
+
+</html>

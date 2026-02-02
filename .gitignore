@@ -1,3 +1,8 @@
 .vercel
 node_modules/
 src-react/node_modules/
+# Python
+__pycache__/
+*.pyc
+# DB
+*.db
