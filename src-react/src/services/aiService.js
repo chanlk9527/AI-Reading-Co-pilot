@@ -1,7 +1,10 @@
 import { AI_CONFIG } from './config.js';
+import { PROMPTS } from './prompts.js';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 /**
- * Unified AI Service to handle requests to different providers.
+ * Unified AI Service - uses backend proxy with streaming support
  */
 class AIService {
     constructor() {
@@ -9,123 +12,104 @@ class AIService {
     }
 
     /**
-     * Send a query to the configured AI provider.
+     * Send a query to the AI with streaming response
+     * @param {string} systemPrompt 
+     * @param {string} userQuery 
+     * @param {function} onChunk - Callback for each chunk received
+     * @returns {Promise<string>} Full response text
+     */
+    async chatStream(systemPrompt, userQuery, onChunk) {
+        const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                system_prompt: systemPrompt,
+                user_query: userQuery,
+                provider: this.config.provider,
+                api_key: this.config[this.config.provider]?.apiKey || null
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'AI request failed');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Parse SSE events
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+
+                    if (data === '[DONE]') {
+                        continue;
+                    }
+
+                    if (data.startsWith('[ERROR]')) {
+                        throw new Error(data.slice(7));
+                    }
+
+                    fullText += data;
+                    if (onChunk) {
+                        onChunk(data, fullText);
+                    }
+                }
+            }
+        }
+
+        return fullText;
+    }
+
+    /**
+     * Non-streaming chat (for backward compatibility)
      */
     async chat(systemPrompt, userQuery) {
-        const provider = this.config.provider;
-
-        if (provider === 'aliyun') {
-            return this._callAliyun(systemPrompt, userQuery);
-        } else if (provider === 'google') {
-            return this._callGoogle(systemPrompt, userQuery);
-        } else {
-            throw new Error(`Unknown provider: ${provider}`);
-        }
-    }
-
-    /**
-     * Call Alibaba Cloud DashScope API (Qwen)
-     */
-    async _callAliyun(systemPrompt, userQuery) {
-        const { apiKey, model } = this.config.aliyun;
-        if (!apiKey) throw new Error("Aliyun API Key is missing");
-
-        const url = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                input: {
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userQuery }
-                    ]
-                },
-                parameters: {
-                    result_format: 'message'
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(`Aliyun Error: ${err.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-        return data.output.choices[0].message.content;
-    }
-
-    /**
-     * Call Google Gemini API
-     */
-    async _callGoogle(systemPrompt, userQuery) {
-        const { apiKey, model } = this.config.google;
-        if (!apiKey) throw new Error("Google API Key is missing");
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-        const combinedPrompt = `${systemPrompt}\n\nUser Query: ${userQuery}`;
-
-        const response = await fetch(url, {
+        const response = await fetch(`${API_BASE_URL}/ai/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: combinedPrompt
-                    }]
-                }]
+                system_prompt: systemPrompt,
+                user_query: userQuery,
+                provider: this.config.provider,
+                api_key: this.config[this.config.provider]?.apiKey || null
             })
         });
 
         if (!response.ok) {
             const err = await response.json();
-            throw new Error(`Google Error: ${err.error?.message || response.statusText}`);
+            throw new Error(err.detail || 'AI request failed');
         }
 
         const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
+        return data.content;
     }
+
+    // ... existing code ...
 
     /**
      * Analyze text for Reading Coach (Smart Import).
      */
     async analyzeText(rawText) {
-        const systemPrompt = `You are a linguistic engine for an English learning app. 
-        Analyze the user's text. 
-        1. Split the text into INDIVIDUAL SENTENCES. However, if a sentence is very short (less than 6 words), merge it with the previous or next sentence to keep flow.
-        2. Return a VALID JSON object (no markdown formatting, just raw JSON).
-        Structure:
-        {
-          "paragraphs": [
-            {
-              "text": "Sentence text...",
-              "translation": "Full Chinese translation of this paragraph.",
-              "insight": { "tag": "Short Theme (e.g. Irony)", "text": "Deep analysis..." },
-              "knowledge": [
-                { 
-                  "key": "unique_id_for_word", 
-                  "word": "Display Word", 
-                  "ipa": "IPA", 
-                  "def": "Chinese Definition", 
-                  "clue": "English Hint/Synonym", 
-                  "diff": 1-6 (Integer, 1=A1, 6=C2), 
-                  "context": "Short sentence context or collocation" 
-                }
-              ]
-            }
-          ]
-        }
-        Do not include \`\`\`json blocks. Just the raw JSON string.`;
+        const systemPrompt = PROMPTS.ANALYSIS.SYSTEM;
 
+        // Use non-streaming for JSON parsing
         const responseText = await this.chat(systemPrompt, rawText);
         console.log("Raw AI Response:", responseText);
 
@@ -135,12 +119,11 @@ class AIService {
             jsonStr = codeBlockMatch[1];
         }
 
-        jsonStr = jsonStr.trim();
-
         try {
             return JSON.parse(jsonStr);
         } catch (e) {
             console.error("AI JSON Parse Error:", e, jsonStr);
+            // Fallback: Try to find valid JSON object
             const firstBrace = jsonStr.indexOf('{');
             const lastBrace = jsonStr.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace !== -1) {
@@ -151,6 +134,29 @@ class AIService {
                 }
             }
             throw new Error("Failed to parse AI response. " + e.message);
+        }
+    }
+
+    /* splitText removed - replaced by backend Spacy Sentencizer */
+
+    /**
+     * Analyze a single sentence/paragraph (content analysis).
+     */
+    async analyzeSentence(rawText) {
+        const systemPrompt = PROMPTS.ANALYSIS.SYSTEM;
+        const responseText = await this.chat(systemPrompt, rawText);
+
+        let jsonStr = responseText;
+        const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch) {
+            jsonStr = codeBlockMatch[1];
+        }
+
+        try {
+            return JSON.parse(jsonStr);
+        } catch (e) {
+            console.error("AI Analysis Parse Error:", e, jsonStr);
+            throw new Error("Failed to parse analysis.");
         }
     }
 }

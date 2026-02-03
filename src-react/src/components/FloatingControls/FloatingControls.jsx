@@ -1,13 +1,49 @@
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 
 export default function FloatingControls({ onImport }) {
     const { mode, level, vocabLevel, switchMode, changeLevel, changeVocabLevel, LEVEL_DESCS } = useApp();
+    const navigate = useNavigate();
 
     const getModeLabel = () => mode === 'flow' ? 'Flow' : 'Learn';
     const getLevelLabel = () => 'Lv' + level;
 
+    const backBtnStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '8px 14px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        borderRadius: '10px',
+        cursor: 'pointer',
+        fontSize: '0.9rem',
+        fontWeight: 600,
+        color: '#555',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        transition: 'all 0.2s'
+    };
+
     return (
         <div className="floating-controls">
+            {/* Back to Library Button - Always visible */}
+            <button
+                style={backBtnStyle}
+                onClick={() => navigate('/library')}
+                onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#667eea';
+                    e.currentTarget.style.color = 'white';
+                }}
+                onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+                    e.currentTarget.style.color = '#555';
+                }}
+            >
+                <span>←</span>
+                <span>返回书库</span>
+            </button>
+
             <div className="control-collapsed-view" id="collapsedLabel">
                 {getModeLabel()} • {getLevelLabel()} • {vocabLevel}
             </div>

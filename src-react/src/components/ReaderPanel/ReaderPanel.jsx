@@ -1,19 +1,35 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import Paragraph from './Paragraph';
 
-export default function ReaderPanel({ paragraphs }) {
+export default function ReaderPanel({ paragraphs, title }) {
     const { activeId, setActiveId, mode } = useApp();
     const panelRef = useRef(null);
     const markerRef = useRef(null);
+    const initialScrollRestored = useRef(false);
 
-    // Initialize first paragraph as active on mount
+    // Initialize first paragraph as active on mount if no activeId
     useEffect(() => {
-        if (paragraphs.length > 0 && !activeId) {
+        if (paragraphs.length > 0 && !activeId && !initialScrollRestored.current) {
             const firstId = paragraphs[0].id || 'p-0';
             setActiveId(firstId);
         }
     }, [paragraphs, activeId, setActiveId]);
+
+    // Restore Scroll Position
+    useEffect(() => {
+        if (paragraphs.length > 0 && activeId && !initialScrollRestored.current && panelRef.current) {
+            const el = panelRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
+            if (el) {
+                // Scroll to position (35% from top to align with reading focus)
+                const panel = panelRef.current;
+                const top = el.offsetTop - (window.innerHeight * 0.3);
+                panel.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+
+                initialScrollRestored.current = true;
+            }
+        }
+    }, [paragraphs, activeId]);
 
     // Update marker position function
     const updateMarkerPosition = useCallback(() => {

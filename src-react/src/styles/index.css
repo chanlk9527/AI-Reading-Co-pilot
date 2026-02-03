@@ -278,17 +278,18 @@ body.mode-flow .reader-content {
     margin: 0 auto;
 }
 
-/* Ask AI Layout Shift (Responsive) */
-body.ask-mode .reader-panel {
-    padding-right: 380px;
-    /* Reserve space for bubble (300px + margins) */
-}
+/* Ask AI Layout Shift - Only activate when space is insufficient */
+/* Note: ask-mode class is only added by JS when viewport space is tight */
 
 body.ask-mode .reader-content {
-    max-width: 650px;
-    /* Slightly shrink text width if needed */
-    margin: 0 auto;
-    /* Keep centered in the remaining space */
+    max-width: 580px;
+    margin-left: 30px;
+    margin-right: auto;
+}
+
+/* Smooth transition for reader-content */
+.reader-content {
+    transition: max-width 0.4s ease, margin 0.4s ease;
 }
 
 /* ================= 左侧阅读区 (Old overrides) ================= */
@@ -497,6 +498,19 @@ body.mode-learn .smart-word.highlighted {
 
 .smart-word:hover .peek-tooltip {
     opacity: 1;
+}
+
+/* Interactive Word (Flow Mode Lv2 - Click to Toggle) */
+.smart-word.interactive-word {
+    cursor: pointer;
+}
+
+.smart-word.interactive-word:active {
+    transform: scale(0.98);
+}
+
+.smart-word.interactive-word .peek-tooltip {
+    transition: opacity 0.15s, background 0.2s;
 }
 
 /* Inline Definition Tag (Learn Mode Level 1) */
@@ -862,7 +876,7 @@ body.mode-learn .smart-word.highlighted {
     /* To the right of the paragraph initially */
     top: 0;
     width: 300px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(15px);
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -873,10 +887,49 @@ body.mode-learn .smart-word.highlighted {
     flex-direction: column;
     gap: 10px;
     animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-height: 400px;
+    overflow: hidden;
 }
 
 .ask-bubble.show {
     display: flex;
+}
+
+/* Ask bubble header with close button */
+.ask-bubble-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.ask-bubble-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+.ask-bubble-close:hover {
+    color: #ef4444;
+    transform: scale(1.1);
+}
+
+/* In Learn mode, use fixed positioning to overlay on right side */
+body.mode-learn .ask-bubble {
+    position: fixed;
+    right: 20px;
+    top: 100px;
+    left: auto;
 }
 
 @keyframes popIn {

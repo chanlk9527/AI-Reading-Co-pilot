@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 from contextlib import contextmanager
 
-DATABASE_PATH = "reading_copilot.db"
+DATABASE_PATH = "reading_copilot_v3.db"
 
 def get_db_connection():
     """Get a database connection with row factory"""
@@ -51,6 +51,7 @@ def init_database():
                 user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
+                scaffolding_data TEXT,  -- AI processed data as JSON
                 reading_mode TEXT DEFAULT 'flow', -- flow | learn
                 scaffold_level INTEGER DEFAULT 2,   -- 1, 2, 3
                 vocab_level TEXT DEFAULT 'B1',      -- A1-C2
@@ -60,13 +61,40 @@ def init_database():
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         ''')
+        
+        # Migration: Add columns if they don't exist
+        try:
+            cursor.execute('ALTER TABLE texts ADD COLUMN scaffolding_data TEXT')
+        except sqlite3.OperationalError:
+            pass
 
-        # Paragraphs table (New)
+        try:
+            cursor.execute('ALTER TABLE texts ADD COLUMN reading_mode TEXT DEFAULT "flow"')
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute('ALTER TABLE texts ADD COLUMN scaffold_level INTEGER DEFAULT 2')
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute('ALTER TABLE texts ADD COLUMN vocab_level TEXT DEFAULT "B1"')
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            cursor.execute('ALTER TABLE texts ADD COLUMN current_paragraph_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+
+        # Sentences table (Replaced Paragraphs table)
+        # Flat model: Text -> Sentences
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS paragraphs (
+            CREATE TABLE IF NOT EXISTS sentences (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 text_id INTEGER NOT NULL,
-                sequence INTEGER NOT NULL,
+                sentence_index INTEGER NOT NULL, -- Global order in text
                 content TEXT NOT NULL,
                 translation TEXT,
                 analysis_json TEXT, -- Stores keywords, insights as JSON
@@ -79,10 +107,10 @@ def init_database():
             CREATE INDEX IF NOT EXISTS idx_texts_user_id ON texts (user_id)
         ''')
         cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_paragraphs_text_id ON paragraphs (text_id)
+            CREATE INDEX IF NOT EXISTS idx_sentences_text_id ON sentences (text_id)
         ''')
         
-        print("✅ Database initialized successfully")
+        print(f"✅ Database initialized successfully: {DATABASE_PATH}")
 
 # Initialize on import
 if not os.path.exists(DATABASE_PATH):
