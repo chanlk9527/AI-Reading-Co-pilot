@@ -59,7 +59,8 @@ export default function ReaderPage() {
                             knowledge: analysis.knowledge || [],
                             insight: analysis.insight || { tag: '分析', text: '暂无解析' },
                             translation: p.translation || '暂无翻译',
-                            xray: analysis.xray || null
+                            xray: analysis.xray || null,
+                            companion: analysis.companion || null
                         });
 
                         return {
@@ -69,7 +70,8 @@ export default function ReaderPage() {
                             knowledge: analysis.knowledge || [],
                             insight: analysis.insight,
                             translation: p.translation,
-                            xray: analysis.xray
+                            xray: analysis.xray,
+                            companion: analysis.companion || null
                         };
                     });
 
@@ -165,7 +167,8 @@ export default function ReaderPage() {
                 knowledge: result.knowledge || [],
                 insight: result.insight || { tag: 'Analysis', text: 'No insight' },
                 translation: result.translation || 'No translation',
-                xray: result.xray || null
+                xray: result.xray || null,
+                companion: result.companion || null
             });
 
             // 2. Persist to Backend (if using real backend)
@@ -176,7 +179,8 @@ export default function ReaderPage() {
                         analysis: {
                             knowledge: result.knowledge || [],
                             insight: result.insight,
-                            xray: result.xray
+                            xray: result.xray,
+                            companion: result.companion || null
                         }
                     });
                     console.log(`[ReaderPage] Persisted reanalysis to backend`);

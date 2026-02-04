@@ -276,3 +276,963 @@ have a very large mustache.
 2026-02-04 10:33:55,978 - app.routers.sentences - INFO - Fetching sentences for text 3
 2026-02-04 10:35:19,974 - app.routers.sentences - INFO - Fetching sentences for text 3
 2026-02-04 10:35:19,984 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:38:03,688 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:38:03,696 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:39:37,347 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:39:37,354 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:40:44,560 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:40:44,567 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:43:22,775 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:43:22,783 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:46:14,678 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:46:14,683 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,671 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,685 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,698 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,709 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,722 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,736 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,748 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:04,757 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:05,278 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:05,286 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:36,960 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:36,965 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,096 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,107 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,118 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,132 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,142 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,153 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,162 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:37,168 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,742 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,757 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,767 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,773 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,783 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,795 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,802 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:48:59,809 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:00,262 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:00,269 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:39,586 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:39,592 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:48,769 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:48,775 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:49:56,091 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 10:49:56,092 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: Mr. Dursley was the director of a firm called Grunnings, which made
+drills.
+2026-02-04 10:50:20,430 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 10:51:23,287 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 10:51:23,287 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: Mrs. Dursley was thin and blonde and had
+nearly twice the usual amount of neck, which came in very useful as she
+spent so much of her time craning over garden fences, spying on the
+neighbors.
+2026-02-04 10:51:52,877 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 11:07:21,081 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 11:07:21,090 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 11:45:01,214 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 11:45:01,226 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 11:45:25,352 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 11:45:25,384 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 14:13:28,788 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 14:13:28,799 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,655 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,669 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,679 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,687 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,698 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,709 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,718 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,727 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,734 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:04,741 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:42:05,314 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:46,957 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:46,973 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:46,988 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,004 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,018 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,032 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,044 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,057 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,070 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,078 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:43:47,281 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,143 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,158 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,169 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,181 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,193 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,206 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,218 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,229 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,240 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,247 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:48:32,281 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:52:09,097 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:52:09,102 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:52:12,999 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:52:13,004 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:52:34,749 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 15:52:34,750 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: The Dursleys had everything they wanted, but they also had a secret, and
+their greatest fear was that somebody would discover it.
+2026-02-04 15:53:06,168 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 15:54:06,011 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:54:06,035 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:56:53,840 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:56:53,846 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 15:57:20,364 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 15:57:20,364 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: The Dursleys had everything they wanted, but they also had a secret, and
+their greatest fear was that somebody would discover it.
+2026-02-04 15:57:55,271 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 15:59:22,534 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:59:22,538 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:59:56,864 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 15:59:56,878 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:00:05,585 - app.routers.texts - INFO - User 1 creating text: 321
+2026-02-04 16:00:05,626 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:00:07,087 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:00:07,091 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:00:07,107 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:00:07,108 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.
+2026-02-04 16:00:08,459 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:00:08,459 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.
+2026-02-04 16:00:09,737 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:00:09,738 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: "My dear Mr. Bennet," said his lady to him one day, "have you heard that Netherfield Park is let at last?"
+2026-02-04 16:00:35,159 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:00:46,721 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:00:52,875 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:00:52,893 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:00:53,126 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:00:53,126 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.
+2026-02-04 16:00:54,541 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:00:54,542 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.
+2026-02-04 16:01:03,772 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:01:39,848 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:01:48,361 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:01:48,381 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:01:58,231 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:04:37,267 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:04:37,280 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:05:26,730 - app.routers.texts - INFO - User 1 creating text: ToBe
+2026-02-04 16:05:26,747 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:05:28,441 - app.routers.sentences - INFO - Fetching sentences for text 5
+2026-02-04 16:05:28,446 - app.routers.sentences - INFO - Fetching sentences for text 5
+2026-02-04 16:05:28,474 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:05:28,475 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: To be, or not to be, that is the question
+2026-02-04 16:05:51,976 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:08:58,865 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,874 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,883 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,891 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,901 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,908 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,918 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,926 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,933 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:58,939 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:08:59,290 - app.routers.sentences - INFO - Fetching sentences for text 5
+2026-02-04 16:08:59,296 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,519 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,531 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,542 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,552 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,563 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,573 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,583 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,593 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,603 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,609 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:09:30,966 - app.routers.sentences - INFO - Fetching sentences for text 5
+2026-02-04 16:09:30,970 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:10:56,846 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:10:56,846 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: To be, or not to be, that is the question
+2026-02-04 16:11:36,188 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:12:20,732 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:20,738 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:26,170 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:12:26,175 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:12:29,162 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:29,170 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:30,928 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:12:30,937 - app.routers.sentences - INFO - Fetching sentences for text 4
+2026-02-04 16:12:36,040 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:36,047 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 16:12:37,765 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:12:37,770 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:12:46,781 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 16:12:46,781 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: He was a big, beefy man with hardly any neck, although he did
+have a very large mustache.
+2026-02-04 16:13:26,110 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 16:17:03,403 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:17:03,410 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:17:11,471 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 16:17:11,482 - app.routers.sentences - INFO - Fetching sentences for text 3

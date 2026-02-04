@@ -1447,3 +1447,27 @@ body.mode-learn .ask-bubble {
         transform: rotate(360deg);
     }
 }
+/* ================= AI Companion (ÄÚÁª°é¶Á) ================= */
+.ai-companion {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.5;
+    animation: fadeIn 0.4s ease;
+}
+
+.companion-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.companion-text {
+    font-family: "PingFang SC", -apple-system, sans-serif;
+}

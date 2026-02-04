@@ -82,7 +82,8 @@ export default function Paragraph({ id, data, isActive }) {
                         knowledge: result.knowledge || [],
                         insight: result.insight || { tag: 'Analysis', text: 'No insight' },
                         translation: result.translation || 'No translation',
-                        xray: result.xray || null
+                        xray: result.xray || null,
+                        companion: result.companion || null
                     });
 
                     // 2. Persist to Backend
@@ -93,7 +94,8 @@ export default function Paragraph({ id, data, isActive }) {
                                 analysis: {
                                     knowledge: result.knowledge || [],
                                     insight: result.insight,
-                                    xray: result.xray
+                                    xray: result.xray,
+                                    companion: result.companion || null
                                 }
                             });
                         } catch (e) {
@@ -111,13 +113,11 @@ export default function Paragraph({ id, data, isActive }) {
         }
     }, [isActive, isInView, bookData, data, id, isAnalyzing, updateBookData, token]);
 
-    // Level 1: Auto-show translations
+    // Auto-set translation visibility based on level change
     useEffect(() => {
-        if (level === 1) {
-            setShowTrans(true);
-        } else {
-            setShowTrans(false);
-        }
+        // Level 1: default to showing translation
+        // Level 2/3: default to hiding translation
+        setShowTrans(level === 1);
     }, [level]);
 
     // Generate HTML content with keyword spans and level-specific behavior
@@ -428,9 +428,17 @@ export default function Paragraph({ id, data, isActive }) {
             />
 
             {/* Translation */}
-            <div className={`inline-trans ${showTrans || level === 1 ? 'show' : ''}`} id={`trans-${id}`}>
+            <div className={`inline-trans ${showTrans ? 'show' : ''}`} id={`trans-${id}`}>
                 {effectiveData.translation || 'Translation not available.'}
             </div>
+
+            {/* AI Companion */}
+            {effectiveData.companion && effectiveData.companion.text && (
+                <div className="ai-companion">
+                    <span className="companion-icon">🎙️</span>
+                    <span className="companion-text">{effectiveData.companion.text}</span>
+                </div>
+            )}
 
             {/* Analyzing Indicator */}
             {isAnalyzing && (

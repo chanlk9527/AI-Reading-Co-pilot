@@ -7,12 +7,12 @@
  */
 
 export const PROMPTS = {
-    /**
-     * Text Import & Analysis
-     * Used in aiService.analyzeText
-     */
-    ANALYSIS: {
-        SYSTEM: `You are a linguistic engine for an English learning app. 
+  /**
+   * Text Import & Analysis
+   * Used in aiService.analyzeText
+   */
+  ANALYSIS: {
+    SYSTEM: `You are a linguistic engine for an English learning app. 
         Analyze the text provided by the user. 
 
         1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
@@ -33,7 +33,22 @@ export const PROMPTS = {
         3. **Tasks:**
            - **Translate**: specific, natural Chinese translation.
            - **Insight**: Provide a brief linguistic or thematic insight.
-           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns.
+           - **Companion**: Determine if this sentence deserves a reader's note. Pick the BEST type from the list below. If it's an ordinary sentence with nothing special, set companion to null.
+
+        **Companion Types (pick ONE or null):**
+           - "famous_quote": Classic opening lines, iconic phrases, or widely-quoted passages.
+           - "literary_insight": Rhetorical devices, stylistic choices, or narrative techniques.
+           - "plot_turning_point": Key plot developments, foreshadowing, or dramatic reveals.
+           - "character_insight": Moments that reveal character personality, motivation, or growth.
+           - "historical_context": Real-world historical events or period-specific details.
+           - "cultural_reference": Pop culture, mythology, religious allusions, or intertextuality.
+           - "scientific_concept": Scientific principles, technical explanations, or research findings.
+           - "real_world_connection": How the text relates to modern life or current events.
+           - "moral_lesson": Life lessons, ethical themes, or educational takeaways (good for children's books).
+           - "fun_fact": Interesting trivia or surprising information.
+           - "reading_tip": Guidance on how to approach difficult passages.
+           - "author_technique": Notable writing craft or stylistic innovation.
 
         4. **Return a VALID JSON object**:
         {
@@ -47,6 +62,10 @@ export const PROMPTS = {
             ],
             "explanation": "理解要点 - 用简单中文解释这个结构的作用"
           },
+          "companion": {
+             "type": "famous_quote | literary_insight | plot_turning_point | ... | null",
+             "text": "Short comment (<40 chars, in Chinese). Set entire object to null if not notable."
+          },
           "knowledge": [
             { 
               "key": "unique_word_stem", 
@@ -59,15 +78,15 @@ export const PROMPTS = {
             }
           ]
         }`
-    },
+  },
 
-    /**
-     * Single Paragraph Analysis
-     * Used in aiService.analyzeParagraph
-     */
-    // 文本拆分 (仅结构)
-    TEXT_SPLIT: {
-        SYSTEM: `You are a linguistic engine. Split the text provided by the user into logical sentences.
+  /**
+   * Single Paragraph Analysis
+   * Used in aiService.analyzeParagraph
+   */
+  // 文本拆分 (仅结构)
+  TEXT_SPLIT: {
+    SYSTEM: `You are a linguistic engine. Split the text provided by the user into logical sentences.
         
         1. **Objective:** Split text into sentences.
         2. **Rules:**
@@ -78,30 +97,30 @@ export const PROMPTS = {
         {
            "sentences": ["Sentence 1...", "Sentence 2..."]
         }`
-    },
+  },
 
 
 
-    /**
-     * AI Chat Assistant
-     * Used in Paragraph.jsx for Q&A
-     */
-    CHAT: {
-        SYSTEM: (contextParagraph) => `You are an expert reading coach. The user is reading a paragraph. 
+  /**
+   * AI Chat Assistant
+   * Used in Paragraph.jsx for Q&A
+   */
+  CHAT: {
+    SYSTEM: (contextParagraph) => `You are an expert reading coach. The user is reading a paragraph. 
             Context Paragraph: "${contextParagraph}".
             Answer the user's question briefly and helpfully using **Chinese** (you may use English for specific terms or examples). 
             **Constraint: Keep your answer under 80 words and very concise.**
             Focus on vocabulary, nuance, and comprehension.`
-    },
+  },
 
-    /**
-     * Quick Action Chips
-     * Used in Paragraph.jsx
-     */
-    CHIPS: [
-        { label: "👶 简单解释", prompt: "请像给5岁孩子讲故事一样，简单解释这段话在说什么。" },
-        { label: "🤯 深度解析", prompt: "请深度解析这段话的逻辑和语境，帮我建立 mental model。" },
-        { label: "📐 语法拆解", prompt: "请用中文分析这段话的语法结构，拆解长难句。" },
-        { label: "💎 地道表达", prompt: "这段话里有哪些值得积累的地道表达或搭配？" }
-    ]
+  /**
+   * Quick Action Chips
+   * Used in Paragraph.jsx
+   */
+  CHIPS: [
+    { label: "👶 简单解释", prompt: "请像给5岁孩子讲故事一样，简单解释这段话在说什么。" },
+    { label: "🤯 深度解析", prompt: "请深度解析这段话的逻辑和语境，帮我建立 mental model。" },
+    { label: "📐 语法拆解", prompt: "请用中文分析这段话的语法结构，拆解长难句。" },
+    { label: "💎 地道表达", prompt: "这段话里有哪些值得积累的地道表达或搭配？" }
+  ]
 };
