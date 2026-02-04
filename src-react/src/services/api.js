@@ -122,5 +122,39 @@ export const api = {
         });
         if (!response.ok) throw new Error('Failed to update progress');
         return response.json();
+    },
+
+    async getCredits(token) {
+        const response = await fetch(`${API_BASE_URL}/ai/credits`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch credits');
+        return response.json();
+    },
+
+    async recharge(token) {
+        const response = await fetch(`${API_BASE_URL}/auth/recharge`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to recharge');
+        return response.json();
+    },
+
+    async uploadPdf(token, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/pdf/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'PDF upload failed');
+        }
+        return response.json();
     }
 };

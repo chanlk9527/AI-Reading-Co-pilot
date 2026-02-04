@@ -40,6 +40,7 @@ def init_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                credits INTEGER DEFAULT 100,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -85,6 +86,14 @@ def init_database():
 
         try:
             cursor.execute('ALTER TABLE texts ADD COLUMN current_paragraph_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+
+        # Migration: Add credits column to users if it doesn't exist
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 100')
+            # Give existing users 100 credits
+            cursor.execute('UPDATE users SET credits = 100 WHERE credits IS NULL')
         except sqlite3.OperationalError:
             pass
 

@@ -38,8 +38,45 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('access_token');
     };
 
+    const updateCredits = (newCredits) => {
+        if (user) {
+            setUser({ ...user, credits: newCredits });
+        }
+    };
+
+    const recharge = async () => {
+        if (!token) return;
+        try {
+            const updatedUser = await api.recharge(token);
+            setUser(updatedUser);
+            return updatedUser;
+        } catch (err) {
+            console.error("Recharge failed", err);
+            throw err;
+        }
+    };
+
+    const refreshCredits = async () => {
+        if (!token) return;
+        try {
+            const data = await api.getCredits(token);
+            updateCredits(data.credits);
+        } catch (err) {
+            console.error("Failed to refresh credits", err);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{
+            user,
+            token,
+            login,
+            logout,
+            loading,
+            updateCredits,
+            recharge,
+            refreshCredits
+        }}>
             {!loading && children}
         </AuthContext.Provider>
     );

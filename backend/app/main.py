@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_database
 from app.services.nlp import init_spacy
-from app.routers import auth, texts, sentences, ai, tts
+from app.routers import auth, texts, sentences, ai, tts, pdf
 import logging
 
 # Configure logging
@@ -37,6 +37,7 @@ app.include_router(texts.router)
 app.include_router(sentences.router)
 app.include_router(ai.router)
 app.include_router(tts.router)
+app.include_router(pdf.router)
 
 @app.get("/")
 async def health_check():

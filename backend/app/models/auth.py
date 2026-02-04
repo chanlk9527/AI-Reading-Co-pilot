@@ -11,6 +11,7 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    credits: int = 100
     created_at: str
 
 class TokenResponse(BaseModel):

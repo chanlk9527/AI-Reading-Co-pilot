@@ -49,6 +49,7 @@ async def register(data: UserRegister):
             user=UserResponse(
                 id=user["id"],
                 email=user["email"],
+                credits=user.get("credits", 100),
                 created_at=str(user["created_at"])
             )
         )
@@ -71,6 +72,7 @@ async def login(data: UserLogin):
             user=UserResponse(
                 id=user["id"],
                 email=user["email"],
+                credits=user.get("credits", 100),
                 created_at=str(user["created_at"])
             )
         )
@@ -80,5 +82,26 @@ async def get_me(user = Depends(get_current_user)):
     return UserResponse(
         id=user["id"],
         email=user["email"],
+        credits=user.get("credits", 100),
         created_at=str(user["created_at"])
     )
+
+@router.post("/recharge", response_model=UserResponse)
+async def recharge_credits(user = Depends(get_current_user)):
+    """Recharge user credits (mock implementation - adds 1000 credits)"""
+    logger.info(f"Recharge credits for user {user['id']}")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        new_credits = user.get("credits", 0) + 1000
+        cursor.execute(
+            "UPDATE users SET credits = ? WHERE id = ?",
+            (new_credits, user["id"])
+        )
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user["id"],))
+        updated_user = dict(cursor.fetchone())
+        return UserResponse(
+            id=updated_user["id"],
+            email=updated_user["email"],
+            credits=updated_user.get("credits", 100),
+            created_at=str(updated_user["created_at"])
+        )

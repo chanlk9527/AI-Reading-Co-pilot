@@ -5,13 +5,16 @@ import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 export default function LibraryPage() {
-    const { token, logout, user } = useAuth();
+    const { token, logout, user, recharge } = useAuth();
     const [texts, setTexts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importTitle, setImportTitle] = useState('');
     const [importContent, setImportContent] = useState('');
     const [importing, setImporting] = useState(false);
+    const [recharging, setRecharging] = useState(false);
+    const [importType, setImportType] = useState('text'); // 'text' or 'pdf'
+    const [importFile, setImportFile] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,25 +32,47 @@ export default function LibraryPage() {
     }, [token]);
 
     const handleImport = async () => {
-        if (!importTitle.trim() || !importContent.trim()) {
-            alert('请填写标题和内容');
-            return;
+        if (importType === 'text') {
+            if (!importTitle.trim() || !importContent.trim()) {
+                alert('请填写标题和内容');
+                return;
+            }
+        } else if (importType === 'pdf') {
+            if (!importFile) {
+                alert('请选择 PDF 文件');
+                return;
+            }
         }
+
         setImporting(true);
         try {
-            // 优化：不再导入时调用 AI，改为阅读时按需分析
-            // 仅仅保存原文
+            if (importType === 'pdf') {
+                // Upload PDF first to get text
+                const result = await api.uploadPdf(token, importFile);
+                if (result.success) {
+                    // Create text with extracted content
+                    await api.createText(token, {
+                        title: result.filename.replace('.pdf', ''),
+                        content: result.text,
+                        scaffolding_data: null
+                    });
+                }
+            } else {
+                // Text import
+                await api.createText(token, {
+                    title: importTitle.trim(),
+                    content: importContent.trim(),
+                    scaffolding_data: null
+                });
+            }
 
-            await api.createText(token, {
-                title: importTitle.trim(),
-                content: importContent.trim(),
-                scaffolding_data: null
-            });
             const data = await api.getTexts(token);
             setTexts(data);
             setShowImportModal(false);
             setImportTitle('');
             setImportContent('');
+            setImportFile(null);
+            setImportType('text');
         } catch (e) {
             alert("导入失败: " + e.message);
         } finally {
@@ -123,6 +148,42 @@ export default function LibraryPage() {
                 }
                 .logout-btn:hover {
                     background: rgba(255,255,255,0.25);
+                }
+                .credits-display {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: rgba(255,255,255,0.15);
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    color: white;
+                }
+                .credits-icon {
+                    font-size: 1rem;
+                }
+                .credits-value {
+                    font-weight: 600;
+                    font-size: 0.95rem;
+                }
+                .recharge-btn {
+                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                    border: none;
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    margin-left: 8px;
+                }
+                .recharge-btn:hover:not(:disabled) {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+                }
+                .recharge-btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
                 }
                 .library-content {
                     max-width: 1400px;
@@ -425,6 +486,52 @@ export default function LibraryPage() {
                     opacity: 0.6;
                     cursor: not-allowed;
                 }
+                .import-tabs {
+                    display: flex;
+                    gap: 16px;
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding-bottom: 12px;
+                }
+                .import-tab {
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    color: #64748b;
+                    transition: all 0.2s;
+                    background: none;
+                    border: none;
+                }
+                .import-tab.active {
+                    background: #eff6ff;
+                    color: #667eea;
+                }
+                .import-tab:hover:not(.active) {
+                    background: #f8fafc;
+                }
+                .file-upload-area {
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    padding: 40px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    position: relative;
+                }
+                .file-upload-area:hover {
+                    border-color: #667eea;
+                    background: #f8fafc;
+                }
+                .file-input {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0;
+                    cursor: pointer;
+                }
             `}</style>
 
                 <header className="library-header">
@@ -433,6 +540,26 @@ export default function LibraryPage() {
                         <span className="library-brand-text">AI Reading Co-pilot</span>
                     </div>
                     <div className="library-user">
+                        <div className="credits-display">
+                            <span className="credits-icon">💎</span>
+                            <span className="credits-value">{user?.credits ?? 0} 积分</span>
+                            <button
+                                className="recharge-btn"
+                                onClick={async () => {
+                                    setRecharging(true);
+                                    try {
+                                        await recharge();
+                                    } catch (err) {
+                                        alert('充值失败: ' + err.message);
+                                    } finally {
+                                        setRecharging(false);
+                                    }
+                                }}
+                                disabled={recharging}
+                            >
+                                {recharging ? '充值中...' : '+充值'}
+                            </button>
+                        </div>
                         <span className="library-user-email">{user?.email}</span>
                         <button className="logout-btn" onClick={logout}>退出登录</button>
                     </div>
@@ -562,46 +689,96 @@ export default function LibraryPage() {
                                 >×</button>
                             </div>
                             <div style={{ padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                                        文章标题
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="例如：The Great Gatsby - Chapter 1"
-                                        value={importTitle}
-                                        onChange={e => setImportTitle(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px 16px',
-                                            border: '2px solid #e5e7eb',
-                                            borderRadius: 10,
-                                            fontSize: '1rem',
-                                            boxSizing: 'border-box'
-                                        }}
-                                    />
+                                <div className="import-tabs">
+                                    <button
+                                        className={`import-tab ${importType === 'text' ? 'active' : ''}`}
+                                        onClick={() => setImportType('text')}
+                                    >
+                                        ✏️ 文本粘贴
+                                    </button>
+                                    <button
+                                        className={`import-tab ${importType === 'pdf' ? 'active' : ''}`}
+                                        onClick={() => setImportType('pdf')}
+                                    >
+                                        📄 PDF 上传
+                                    </button>
                                 </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                                        文章内容
-                                    </label>
-                                    <textarea
-                                        placeholder="粘贴您想要阅读的英文文章内容..."
-                                        value={importContent}
-                                        onChange={e => setImportContent(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px 16px',
-                                            border: '2px solid #e5e7eb',
-                                            borderRadius: 10,
-                                            fontSize: '1rem',
-                                            minHeight: 200,
-                                            resize: 'vertical',
-                                            boxSizing: 'border-box',
-                                            fontFamily: 'inherit'
-                                        }}
-                                    />
-                                </div>
+
+                                {importType === 'text' ? (
+                                    <>
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                                                文章标题
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="例如：The Great Gatsby - Chapter 1"
+                                                value={importTitle}
+                                                onChange={e => setImportTitle(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '12px 16px',
+                                                    border: '2px solid #e5e7eb',
+                                                    borderRadius: 10,
+                                                    fontSize: '1rem',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                                                文章内容
+                                            </label>
+                                            <textarea
+                                                placeholder="粘贴您想要阅读的英文文章内容..."
+                                                value={importContent}
+                                                onChange={e => setImportContent(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '12px 16px',
+                                                    border: '2px solid #e5e7eb',
+                                                    borderRadius: 10,
+                                                    fontSize: '1rem',
+                                                    minHeight: 200,
+                                                    resize: 'vertical',
+                                                    boxSizing: 'border-box',
+                                                    fontFamily: 'inherit'
+                                                }}
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="file-upload-area">
+                                        <input
+                                            type="file"
+                                            className="file-input"
+                                            accept=".pdf"
+                                            onChange={(e) => setImportFile(e.target.files[0])}
+                                        />
+                                        <div style={{ pointerEvents: 'none' }}>
+                                            <div style={{ fontSize: '2rem', marginBottom: 12 }}>📄</div>
+                                            {importFile ? (
+                                                <div>
+                                                    <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                                                        {importFile.name}
+                                                    </div>
+                                                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                                                        {(importFile.size / 1024 / 1024).toFixed(2)} MB
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                                                        点击或拖拽 PDF 文件到这里
+                                                    </div>
+                                                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: 4 }}>
+                                                        支持文字版 PDF (最大 10MB)
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div style={{
                                 padding: '16px 24px',

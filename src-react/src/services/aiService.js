@@ -11,6 +11,10 @@ class AIService {
         this.config = AI_CONFIG;
     }
 
+    getToken() {
+        return localStorage.getItem('access_token');
+    }
+
     /**
      * Send a query to the AI with streaming response
      * @param {string} systemPrompt 
@@ -19,11 +23,17 @@ class AIService {
      * @returns {Promise<string>} Full response text
      */
     async chatStream(systemPrompt, userQuery, onChunk) {
+        const token = this.getToken();
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 system_prompt: systemPrompt,
                 user_query: userQuery,
@@ -79,11 +89,17 @@ class AIService {
      * Non-streaming chat (for backward compatibility)
      */
     async chat(systemPrompt, userQuery) {
+        const token = this.getToken();
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}/ai/chat`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 system_prompt: systemPrompt,
                 user_query: userQuery,
