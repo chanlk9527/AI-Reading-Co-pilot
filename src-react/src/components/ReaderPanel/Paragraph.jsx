@@ -81,7 +81,8 @@ export default function Paragraph({ id, data, isActive }) {
                     updateBookData(id, {
                         knowledge: result.knowledge || [],
                         insight: result.insight || { tag: 'Analysis', text: 'No insight' },
-                        translation: result.translation || 'No translation'
+                        translation: result.translation || 'No translation',
+                        xray: result.xray || null
                     });
 
                     // 2. Persist to Backend
@@ -91,7 +92,8 @@ export default function Paragraph({ id, data, isActive }) {
                                 translation: result.translation,
                                 analysis: {
                                     knowledge: result.knowledge || [],
-                                    insight: result.insight
+                                    insight: result.insight,
+                                    xray: result.xray
                                 }
                             });
                         } catch (e) {
@@ -124,45 +126,115 @@ export default function Paragraph({ id, data, isActive }) {
         const sortedKeys = [...activePoints].sort((a, b) => b.word.length - a.word.length);
 
         sortedKeys.forEach(k => {
-            const safeWord = k.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\b(${safeWord})\\b`, 'gi');
+            // Strategy: Try to match words with inflections
+            // 1. First, try using the 'context' field which often contains the actual word form
+            // 2. Fall back to the base word with optional common suffixes
 
-            // Build different markup based on mode and level
-            let replacement = '';
+            let matched = false;
 
-            if (mode === 'flow') {
-                // Flow Mode tooltips based on level
-                let tooltipContent = '';
-                if (level === 1) {
-                    tooltipContent = k.def.split('；')[0];
-                } else if (level === 2) {
-                    // Lv2: Default English clue, Toggle -> Chinese def
-                    tooltipContent = toggledWords[k.key] ? k.def.split('；')[0] : (k.clue || 'Hint?');
+            // Strategy 1: Extract key words from context and try to match them
+            if (k.context && !matched) {
+                // The context often contains the actual inflected form
+                // e.g., context: "craning over garden fences" for word: "crane"
+                const contextWords = k.context.split(/\s+/);
+
+                // For single base words, find the word in context that looks like an inflection
+                if (!k.word.includes(' ')) {
+                    const baseWord = k.word.toLowerCase();
+                    for (const ctxWord of contextWords) {
+                        const cleanCtxWord = ctxWord.replace(/[.,!?;:'"]/g, '').toLowerCase();
+                        // Check if context word is an inflection of base word
+                        // e.g., "craning" starts with "cran" (crane without 'e')
+                        const stemBase = baseWord.replace(/e$/, ''); // Remove trailing 'e' for verbs like "crane"
+                        if (cleanCtxWord.startsWith(stemBase) || cleanCtxWord.startsWith(baseWord)) {
+                            const safeCtxWord = ctxWord.replace(/[.,!?;:'"]/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const ctxRegex = new RegExp(`\\b(${safeCtxWord})\\b`, 'gi');
+                            if (ctxRegex.test(html)) {
+                                html = html.replace(ctxRegex, buildReplacement(k, '$1'));
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
                 } else {
-                    // Lv3: English clue (was IPA)
-                    tooltipContent = k.clue || 'Hint?';
-                }
-                // Add click-to-toggle hint class if Lv2
-                const extraClass = level === 2 ? ' interactive-word' : '';
-                replacement = `<span class="smart-word has-card${extraClass}" data-key="${k.key}">$1<div class="peek-tooltip">${tooltipContent}</div></span>`;
-            } else {
-                // Learn Mode
-                if (level === 1) {
-                    // Inline definition tag
-                    replacement = `<span class="smart-word has-card" data-key="${k.key}">$1<span class="inline-def-tag"> ${k.def.split('；')[0]}</span></span>`;
-                } else if (level === 2) {
-                    // Hover tooltip
-                    replacement = `<span class="smart-word has-card" data-key="${k.key}">$1<div class="peek-tooltip">${k.def.split('；')[0]}</div></span>`;
-                } else {
-                    // Level 3: Simple highlight only
-                    replacement = `<span class="smart-word has-card" data-key="${k.key}">$1</span>`;
+                    // For multi-word phrases, try to match the context directly if it exists in text
+                    const safeContext = k.context.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const ctxRegex = new RegExp(`(${safeContext})`, 'gi');
+                    if (ctxRegex.test(html)) {
+                        html = html.replace(ctxRegex, buildReplacement(k, '$1'));
+                        matched = true;
+                    }
                 }
             }
 
-            html = html.replace(regex, replacement);
+            // Strategy 2: Try the base word with common suffixes
+            if (!matched) {
+                const safeWord = k.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                if (k.word.includes(' ')) {
+                    // Multi-word phrase: try exact match first, then with 's' suffix on last word
+                    const wordParts = k.word.split(' ').map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                    const lastWord = wordParts[wordParts.length - 1];
+                    const phrasePattern = wordParts.slice(0, -1).join('\\s+') + '\\s+' + lastWord + '(?:s|es)?';
+                    const regex = new RegExp(`(${phrasePattern})`, 'gi');
+                    html = html.replace(regex, buildReplacement(k, '$1'));
+                } else {
+                    // Single word: match with common inflection suffixes
+                    // Handle verbs ending in 'e' (crane -> craning, not crane + ing)
+                    const endsWithE = k.word.endsWith('e');
+                    let pattern;
+                    if (endsWithE) {
+                        // For words like "crane": match crane, cranes, craned, craning
+                        const stem = safeWord.slice(0, -1); // Remove the 'e'
+                        pattern = `${stem}(?:e|es|ed|ing)`;
+                    } else {
+                        // For regular words: match with optional suffixes
+                        pattern = `${safeWord}(?:s|es|ed|ing)?`;
+                    }
+                    const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
+                    html = html.replace(regex, buildReplacement(k, '$1'));
+                }
+            }
         });
 
         return html;
+    };
+
+    // Helper function to build the replacement HTML
+    const buildReplacement = (k, matchGroup) => {
+        // Build different markup based on mode and level
+        let replacement = '';
+
+        if (mode === 'flow') {
+            // Flow Mode tooltips based on level
+            let tooltipContent = '';
+            if (level === 1) {
+                tooltipContent = k.def.split('；')[0];
+            } else if (level === 2) {
+                // Lv2: Default English clue, Toggle -> Chinese def
+                tooltipContent = toggledWords[k.key] ? k.def.split('；')[0] : (k.clue || 'Hint?');
+            } else {
+                // Lv3: English clue (was IPA)
+                tooltipContent = k.clue || 'Hint?';
+            }
+            // Add click-to-toggle hint class if Lv2
+            const extraClass = level === 2 ? ' interactive-word' : '';
+            replacement = `<span class="smart-word has-card${extraClass}" data-key="${k.key}">${matchGroup}<div class="peek-tooltip">${tooltipContent}</div></span>`;
+        } else {
+            // Learn Mode
+            if (level === 1) {
+                // Inline definition tag
+                replacement = `<span class="smart-word has-card" data-key="${k.key}">${matchGroup}<span class="inline-def-tag"> ${k.def.split('；')[0]}</span></span>`;
+            } else if (level === 2) {
+                // Hover tooltip
+                replacement = `<span class="smart-word has-card" data-key="${k.key}">${matchGroup}<div class="peek-tooltip">${k.def.split('；')[0]}</div></span>`;
+            } else {
+                // Level 3: Simple highlight only
+                replacement = `<span class="smart-word has-card" data-key="${k.key}">${matchGroup}</span>`;
+            }
+        }
+
+        return replacement;
     };
 
     const toggleTrans = (e) => {

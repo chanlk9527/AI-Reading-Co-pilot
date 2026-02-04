@@ -55,9 +55,11 @@ export default function ReaderPage() {
                         // Populate Context with latest data
                         const analysis = p.analysis || {};
                         updateBookData(p.id, {
+                            text: p.content,  // Add text for CopilotPanel preview
                             knowledge: analysis.knowledge || [],
                             insight: analysis.insight || { tag: '分析', text: '暂无解析' },
-                            translation: p.translation || '暂无翻译'
+                            translation: p.translation || '暂无翻译',
+                            xray: analysis.xray || null
                         });
 
                         return {
@@ -66,7 +68,8 @@ export default function ReaderPage() {
                             sentence_index: p.sentence_index,
                             knowledge: analysis.knowledge || [],
                             insight: analysis.insight,
-                            translation: p.translation
+                            translation: p.translation,
+                            xray: analysis.xray
                         };
                     });
 
@@ -84,8 +87,12 @@ export default function ReaderPage() {
 
         const loadDemoContent = () => {
             setTextTitle('Demo: Pride and Prejudice');
-            Object.entries(demoBookData).forEach(([id, data]) => {
-                updateBookData(id, data);
+            // Include text in bookData for CopilotPanel preview support
+            demoParagraphs.forEach(p => {
+                updateBookData(p.id, {
+                    ...demoBookData[p.id],
+                    text: p.text  // Include text for CopilotPanel
+                });
             });
             setParagraphs(demoParagraphs);
         };
@@ -134,6 +141,56 @@ export default function ReaderPage() {
         // If import needs to be saved, it should be handled by a specific API call.
     };
 
+    // Re-analyze handler
+    const handleReanalyze = async (paragraphId) => {
+        if (!paragraphId) return;
+
+        // Use loose comparison (==) because activeId from getAttribute is a string
+        // but paragraph.id from backend is a number
+        const paragraph = paragraphs.find(p => p.id == paragraphId);
+        if (!paragraph) return;
+
+        console.log(`[ReaderPage] Reanalyzing paragraph ${paragraphId}...`);
+
+        try {
+            const { aiService } = await import('../services/aiService');
+
+            // Call AI for fresh analysis
+            const result = await aiService.analyzeSentence(paragraph.text);
+
+            console.log(`[ReaderPage] Reanalysis complete for paragraph ${paragraphId}`);
+
+            // 1. Update Context 
+            updateBookData(paragraphId, {
+                knowledge: result.knowledge || [],
+                insight: result.insight || { tag: 'Analysis', text: 'No insight' },
+                translation: result.translation || 'No translation',
+                xray: result.xray || null
+            });
+
+            // 2. Persist to Backend (if using real backend)
+            if (token && typeof paragraphId === 'number') {
+                try {
+                    await api.updateSentence(token, paragraphId, {
+                        translation: result.translation,
+                        analysis: {
+                            knowledge: result.knowledge || [],
+                            insight: result.insight,
+                            xray: result.xray
+                        }
+                    });
+                    console.log(`[ReaderPage] Persisted reanalysis to backend`);
+                } catch (e) {
+                    console.error(`[ReaderPage] Failed to persist reanalysis:`, e);
+                }
+            }
+
+        } catch (err) {
+            console.error(`[ReaderPage] Reanalysis failed:`, err);
+            throw err; // Re-throw for CopilotPanel to handle
+        }
+    };
+
     // Split functionality removed (Backend Spacy Import)
 
     if (loading) {
@@ -157,7 +214,7 @@ export default function ReaderPage() {
 
             <div className="app-container" id="appContainer">
                 <ReaderPanel paragraphs={paragraphs} title={textTitle} />
-                <CopilotPanel />
+                <CopilotPanel onReanalyze={handleReanalyze} />
             </div>
 
             <ImportModal

@@ -33,11 +33,20 @@ export const PROMPTS = {
         3. **Tasks:**
            - **Translate**: specific, natural Chinese translation.
            - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
 
         4. **Return a VALID JSON object**:
         {
           "translation": "Chinese translation...",
           "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
           "knowledge": [
             { 
               "key": "unique_word_stem", 

@@ -67,3 +67,212 @@
 2026-02-03 17:51:16,545 - app.routers.sentences - INFO - Fetching sentences for text 3
 2026-02-03 17:51:31,076 - app.routers.sentences - INFO - Fetching sentences for text 3
 2026-02-03 17:51:31,083 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:13:23,296 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:14:31,450 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 09:14:31,454 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 09:14:32,639 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 09:14:32,644 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 09:14:36,570 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:14:36,576 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:15:24,267 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:15:24,272 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:15:24,304 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 09:15:24,304 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze the sentence structure (subject, predicate, grammatical pattern).
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "subject": "The main subject of the sentence",
+            "predicate": "The main verb phrase",
+            "structure": "Grammar pattern name (e.g., 'so...that clause')",
+            "meaning": "Core meaning explanation in Chinese (如此...以至于...)"
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: Mr. Dursley was the director of a firm called Grunnings, which made
+drills.
+2026-02-04 09:15:48,076 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 09:21:52,521 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:21:52,529 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:23:02,771 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:23:02,777 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:23:02,807 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 09:23:02,807 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: He was a big, beefy man with hardly any neck, although he did
+have a very large mustache.
+2026-02-04 09:23:29,165 - app.routers.ai - INFO - AI Chat Proxy: aliyun
+2026-02-04 09:23:29,165 - app.services.ai - INFO - [Aliyun Call] Prompt:
+System: You are a linguistic engine for an English learning app. 
+        Analyze the text provided by the user. 
+
+        1. **Objective:** Analyze the content deeply (Translation, Insight, Vocabulary).
+           - Do NOT split the text. Treat it as a single unit.
+
+        2. **Extract Vocabulary ("knowledge") Comprehensively:**
+           - Identify legitimate learning words/phrases across ALL proficiency levels (A1 to C2).
+           - **Crucial:** Do NOT ignore simple words (A1-A2). We need them for beginners. 
+           - Also ensure advanced words (C1-C2) are captured.
+           - Assign a strict CEFR integer difficulty level:
+             1 = A1 (Beginner)
+             2 = A2 (Elementary)
+             3 = B1 (Intermediate)
+             4 = B2 (Upper Intermediate)
+             5 = C1 (Advanced)
+             6 = C2 (Proficiency/Rare)
+
+        3. **Tasks:**
+           - **Translate**: specific, natural Chinese translation.
+           - **Insight**: Provide a brief linguistic or thematic insight.
+           - **X-Ray**: Analyze sentence structure. Focus on complex patterns (clauses, connectors). Skip trivial analysis for simple sentences.
+
+        4. **Return a VALID JSON object**:
+        {
+          "translation": "Chinese translation...",
+          "insight": { "tag": "Theme/Tone", "text": "Brief analysis..." },
+          "xray": {
+            "pattern": "Sentence pattern name (e.g., 'which 定语从句', 'so...that 结果状语从句')",
+            "breakdown": "Structure breakdown (e.g., '主句 + which引导的定语从句'). Only for complex sentences.",
+            "keyWords": [
+              { "word": "which", "role": "关系代词，引导定语从句" }
+            ],
+            "explanation": "理解要点 - 用简单中文解释这个结构的作用"
+          },
+          "knowledge": [
+            { 
+              "key": "unique_word_stem", 
+              "word": "Display Word", 
+              "ipa": "/ipa/", 
+              "def": "Concise Chinese Definition", 
+              "clue": "English Synonym/Hint", 
+              "diff": 1-6, 
+              "context": "Short collocation" 
+            }
+          ]
+        }
+User: He was a big, beefy man with hardly any neck, although he did
+have a very large mustache.
+2026-02-04 09:23:53,685 - httpx - INFO - HTTP Request: POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation "HTTP/1.1 200 OK"
+2026-02-04 09:25:37,121 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:25:37,131 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:31:41,279 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:31:49,958 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:32:09,026 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:32:09,033 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:32:52,843 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:32:52,850 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:33:54,754 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:33:54,759 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:07,809 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:07,813 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:12,381 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:12,388 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:20,466 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:38:20,472 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:39:30,065 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 09:39:30,073 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:00:17,169 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:00:17,175 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:04:10,487 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:04:10,495 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:08:56,706 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:08:56,715 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:19:11,357 - app.routers.auth - INFO - Login attempt for email: chanlk9527@gmail.com
+2026-02-04 10:19:11,415 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:19:11,417 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:19:15,147 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:19:15,153 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:22:45,642 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:22:45,648 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:25:09,171 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:25:09,262 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:28:12,120 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:28:12,122 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:32:12,869 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:32:12,874 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:33:51,850 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:33:51,855 - app.routers.texts - INFO - Listing texts for User 1
+2026-02-04 10:33:55,973 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:33:55,978 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:35:19,974 - app.routers.sentences - INFO - Fetching sentences for text 3
+2026-02-04 10:35:19,984 - app.routers.sentences - INFO - Fetching sentences for text 3
