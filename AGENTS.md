@@ -39,6 +39,16 @@ AI-Reading-Co-pilot/
 
 ---
 
+## 1.1 Operational Constraints (High Priority)
+
+> **CRITICAL**: Strict rules for managing running services.
+
+1. **Do NOT Duplicate Services**: If a debug service (frontend or backend) is already running, **DO NOT** request to start another one.
+2. **Restart Protocol**: If a restart is strictly necessary, you **MUST** stop the old instance first before starting a new one.
+3. **Automated Checks**: Always use automated scripts or check process lists to confirm if an instance is running to avoid duplicates.
+
+---
+
 ## 2. Build and Test Commands
 
 ### Frontend (src-react/)
