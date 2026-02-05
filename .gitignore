@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 # DB
 *.db
+./backend.log
+./backend/server_debug.log
