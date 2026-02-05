@@ -1,154 +1,100 @@
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import Paragraph from './Paragraph';
 
-export default function ReaderPanel({ paragraphs, title }) {
-    const { activeId, setActiveId, mode } = useApp();
-    const panelRef = useRef(null);
-    const markerRef = useRef(null);
-    const initialScrollRestored = useRef(false);
+export default function ReaderPanel({ paragraphs }) {
+    const { activeId, setActiveId } = useApp();
+    const containerRef = useRef(null);
+    const isInitialScroll = useRef(true);
 
-    // Initialize first paragraph as active on mount if no activeId
+    // Internal scroll handler to update active state
+    const handleScroll = () => {
+        if (!containerRef.current) return;
+
+        // Simple active detection: find paragraph closest to 30% from top
+        const container = containerRef.current;
+        const checkPoint = container.getBoundingClientRect().top + (window.innerHeight * 0.35);
+
+        const nodes = container.querySelectorAll('.paragraph');
+        let activeEl = null;
+        let minDist = Infinity;
+
+        nodes.forEach(node => {
+            const rect = node.getBoundingClientRect();
+            // Check if this node overlaps the checkpoint
+            if (rect.top <= checkPoint && rect.bottom >= checkPoint) {
+                activeEl = node;
+            } else {
+                // If not overlapping, find closest
+                const dist = Math.min(Math.abs(rect.top - checkPoint), Math.abs(rect.bottom - checkPoint)); // Distance to block
+                if (dist < minDist) {
+                    minDist = dist;
+                    if (!activeEl) activeEl = node;
+                }
+            }
+        });
+
+        if (activeEl) {
+            const newId = activeEl.getAttribute('data-id');
+            // Ensure we parse to same type (string vs number)
+            if (newId && String(newId) !== String(activeId)) {
+                // We use a debounce or just set it? 
+                // Setting state on scroll can be heavy, but for just ID it's usually fine.
+                // To avoid too many renders/updates to context, we might check if it's the same.
+                // The check `String(newId) !== String(activeId)` handles that.
+                setActiveId(Number(newId)); // Assuming IDs are numbers based on data
+            }
+        }
+    };
+
+    // Scroll to active paragraph on load / when activeId changes EXTERNALLY (e.g. sidebar click)
+    // We need to distinguish between "scroll caused by user" and "scroll caused by activeId prop change"
+    // Usually, we only auto-scroll if it's an initial load or a distinct navigation action.
+    // But here activeId drives the view? 
+    // If user scrolls, activeId updates. If we then scroll TO that ID, we fight the user.
+    // So ONLY scroll if the change didn't come from our own detector?
+    // A simple way is to track "last detected ID".
+
     useEffect(() => {
-        if (paragraphs.length > 0 && !activeId && !initialScrollRestored.current) {
-            const firstId = paragraphs[0].id || 'p-0';
-            setActiveId(firstId);
+        if (isInitialScroll.current && paragraphs.length > 0 && activeId && containerRef.current) {
+            const el = containerRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
+            if (el) {
+                el.scrollIntoView({ block: 'center', behavior: 'auto' });
+                isInitialScroll.current = false;
+            } else if (!activeId) {
+                // No active ID? Set first as active
+                if (paragraphs[0]) setActiveId(paragraphs[0].id);
+                isInitialScroll.current = false;
+            }
         }
     }, [paragraphs, activeId, setActiveId]);
 
-    // Restore Scroll Position
-    useEffect(() => {
-        if (paragraphs.length > 0 && activeId && !initialScrollRestored.current && panelRef.current) {
-            const el = panelRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
-            if (el) {
-                // Scroll to position (35% from top to align with reading focus)
-                const panel = panelRef.current;
-                const top = el.offsetTop - (window.innerHeight * 0.3);
-                panel.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
-
-                initialScrollRestored.current = true;
-            }
-        }
-    }, [paragraphs, activeId]);
-
-    // Update marker position function
-    const updateMarkerPosition = useCallback(() => {
-        if (!activeId || !markerRef.current || !panelRef.current) return;
-
-        const contentEl = panelRef.current.querySelector('.reader-content');
-        const p = panelRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
-        const marker = markerRef.current;
-
-        if (p && marker && contentEl) {
-            // Use offsetTop relative to reader-content
-            marker.style.top = p.offsetTop + 'px';
-            marker.style.height = p.offsetHeight + 'px';
-            marker.style.opacity = '1';
-            marker.classList.add('active');
-            marker.style.backgroundColor = 'var(--theme-primary)';
-            marker.style.boxShadow = '0 0 15px var(--theme-primary)';
-        }
-    }, [activeId]);
-
-    // Update marker when activeId changes
-    useEffect(() => {
-        updateMarkerPosition();
-    }, [activeId, updateMarkerPosition]);
-
-    // Scroll detection
-    useEffect(() => {
-        const panel = panelRef.current;
-        if (!panel) return;
-
-        const handleScroll = () => {
-            const checkPoint = window.innerHeight * 0.35;
-            let activeEl = null;
-            const paras = panel.querySelectorAll('.paragraph');
-
-            if (paras.length === 0) return;
-
-            paras.forEach(p => {
-                const rect = p.getBoundingClientRect();
-                if (rect.top <= checkPoint && rect.bottom >= checkPoint) {
-                    activeEl = p;
-                }
-            });
-
-            // Edge case handling for top/bottom scroll positions
-            if (!activeEl) {
-                const firstPara = paras[0];
-                const lastPara = paras[paras.length - 1];
-                const firstRect = firstPara.getBoundingClientRect();
-                const lastRect = lastPara.getBoundingClientRect();
-
-                // At top of scroll - first paragraph is below checkpoint
-                if (firstRect.top > checkPoint) {
-                    activeEl = firstPara;
-                }
-                // At bottom of scroll - last paragraph is above checkpoint
-                else if (lastRect.bottom < checkPoint) {
-                    activeEl = lastPara;
-                }
-                // Fallback: find closest paragraph
-                else {
-                    let minDist = Infinity;
-                    paras.forEach(p => {
-                        const rect = p.getBoundingClientRect();
-                        const dist = Math.min(
-                            Math.abs(rect.top - checkPoint),
-                            Math.abs(rect.bottom - checkPoint)
-                        );
-                        if (dist < minDist) {
-                            minDist = dist;
-                            activeEl = p;
-                        }
-                    });
-                }
-            }
-
-            if (activeEl) {
-                const newId = activeEl.getAttribute('data-id');
-                if (newId !== activeId) {
-                    setActiveId(newId);
-                }
-            }
-
-            updateMarkerPosition();
-        };
-
-        panel.addEventListener('scroll', handleScroll);
-
-        // Trigger initial scroll detection after a short delay to ensure DOM is ready
-        const timer = setTimeout(() => {
-            handleScroll();
-        }, 100);
-
-        return () => {
-            panel.removeEventListener('scroll', handleScroll);
-            clearTimeout(timer);
-        };
-    }, [activeId, setActiveId, updateMarkerPosition]);
-
     return (
-        <div className="reader-panel" id="readerPanel" ref={panelRef}>
-            <div className="reader-content">
-                <div className="focus-marker" id="focusMarker" ref={markerRef}></div>
-
-                {paragraphs.length > 0 && (
-                    <div className="book-title">Pride and Prejudice</div>
-                )}
-
+        <div
+            className="reader-panel"
+            ref={containerRef}
+            onScroll={handleScroll}
+            style={{
+                height: '100vh',
+                overflowY: 'auto',
+                width: '100%',
+                scrollBehavior: 'smooth'
+            }}
+        >
+            <div className="reader-content" style={{
+                maxWidth: '800px', // Standard pleasant reading width
+                margin: '0 auto',
+                padding: '40px 20px',
+                paddingBottom: '50vh' // Allow scrolling last item up
+            }}>
                 {paragraphs.map((para, index) => (
                     <Paragraph
-                        key={para.id || `p-${index}`}
-                        id={para.id || `p-${index}`}
+                        key={para.id}
+                        id={para.id}
                         data={para}
-                        isActive={activeId === (para.id || `p-${index}`)}
+                        isActive={String(activeId) === String(para.id)}
                     />
                 ))}
-
-                {/* Bottom spacer for scroll padding */}
-                <div style={{ height: '60vh' }}></div>
             </div>
         </div>
     );

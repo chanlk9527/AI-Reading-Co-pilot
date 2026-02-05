@@ -1,12 +1,12 @@
 @echo off
 echo Starting Frontend...
 
-:: Check directory
+:: Use pushd to change directory temporarily
 if exist "..\frontend" (
-    cd ..\frontend
+    pushd "..\frontend"
 ) else (
     if exist "..\src-react" (
-        cd ..\src-react
+        pushd "..\src-react"
     ) else (
         echo Error: Could not find 'frontend' or 'src-react' directory.
         pause
@@ -22,4 +22,8 @@ if not exist "node_modules" (
 
 :: Start Dev Server
 start "AI Reading Co-pilot Frontend" cmd /k "npm run dev"
+
+:: Return to original directory
+popd
+
 echo Frontend started in a new window.

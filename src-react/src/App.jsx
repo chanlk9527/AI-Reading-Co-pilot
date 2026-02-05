@@ -19,9 +19,9 @@ function PublicOnlyRoute({ children }) {
 
 export default function App() {
     return (
-        <AppProvider>
+        <BrowserRouter>
             <AuthProvider>
-                <BrowserRouter>
+                <AppProvider>
                     <Routes>
                         <Route path="/login" element={
                             <PublicOnlyRoute>
@@ -46,8 +46,8 @@ export default function App() {
                         } />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
-                </BrowserRouter>
+                </AppProvider>
             </AuthProvider>
-        </AppProvider>
+        </BrowserRouter>
     );
 }

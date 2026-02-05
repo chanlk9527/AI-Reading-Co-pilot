@@ -5,7 +5,7 @@ import { api } from '../../services/api';
 import { marked } from 'marked';
 import { PROMPTS } from '../../services/prompts';
 
-export default function Paragraph({ id, data, isActive }) {
+export default function Paragraph({ id, data, isActive, index, setSize, width }) { // Added index, setSize, width for virtual properties
     const { mode, level, vocabLevel, VOCAB_MAP, revealedKeys, revealKey, updateBookData, bookData } = useApp();
     const { token } = useAuth();
     const [showTrans, setShowTrans] = useState(false);
@@ -16,6 +16,17 @@ export default function Paragraph({ id, data, isActive }) {
     const [toggledWords, setToggledWords] = useState({}); // Track toggled words for Lv2
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isInView, setIsInView] = useState(false);
+    const paragraphRef = useRef(null);
+
+    // Merge props data with context data (context is fresher)
+    const effectiveData = { ...data, ...(bookData[id] || {}) };
+
+    // Dynamic Height Measurement for Virtual Scrolling
+    useEffect(() => {
+        if (paragraphRef.current && setSize) {
+            setSize(index, paragraphRef.current.offsetHeight);
+        }
+    }, [setSize, index, width, showTrans, showAskBubble, effectiveData, isAnalyzing]); // Re-measure on content/layout changes
 
     // Intersection Observer for auto-trigger
     useEffect(() => {
@@ -36,9 +47,6 @@ export default function Paragraph({ id, data, isActive }) {
         return () => observer.disconnect();
     }, []);
     const inputRef = useRef(null);
-
-    // Merge props data with context data (context is fresher)
-    const effectiveData = { ...data, ...(bookData[id] || {}) };
 
     const threshold = VOCAB_MAP[vocabLevel] || 1;
     const activePoints = (effectiveData.knowledge || []).filter(k => k.diff >= threshold);
@@ -244,7 +252,7 @@ export default function Paragraph({ id, data, isActive }) {
         setShowTrans(!showTrans);
     };
 
-    const paragraphRef = useRef(null);
+    // const paragraphRef = useRef(null); // Moved to top
     const BUBBLE_WIDTH = 320; // 300px bubble + 20px margin
 
     const toggleAsk = (e) => {

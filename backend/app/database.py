@@ -18,6 +18,7 @@ def get_db_connection():
     return conn
 
 @contextmanager
+
 def get_db():
     """Context manager for database connections"""
     conn = get_db_connection()

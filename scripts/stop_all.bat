@@ -1,7 +1,7 @@
 @echo off
 echo Stopping All Services...
 echo 1. Stopping Frontend...
-call stop_frontend.bat
+call .\stop_frontend.bat
 echo 2. Stopping Backend...
-call stop_server.bat
+call .\stop_server.bat
 echo All services stopped!
