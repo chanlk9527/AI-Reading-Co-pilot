@@ -1,93 +1,93 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import Paragraph from './Paragraph';
 
 export default function ReaderPanel({ paragraphs }) {
     const { activeId, setActiveId } = useApp();
     const containerRef = useRef(null);
-    const isInitialScroll = useRef(true);
+    const [page, setPage] = useState(1);
+    const [inputPage, setInputPage] = useState(1);
 
-    // Internal scroll handler to update active state
-    const handleScroll = () => {
-        if (!containerRef.current) return;
+    const ITEMS_PER_PAGE = 20;
+    const totalPages = Math.ceil(paragraphs.length / ITEMS_PER_PAGE);
 
-        // Simple active detection: find paragraph closest to 30% from top
-        const container = containerRef.current;
-        const checkPoint = container.getBoundingClientRect().top + (window.innerHeight * 0.35);
+    // Sync input when page changes
+    useEffect(() => {
+        setInputPage(page);
+    }, [page]);
 
-        const nodes = container.querySelectorAll('.paragraph');
-        let activeEl = null;
-        let minDist = Infinity;
+    // Calculate visible paragraphs
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const visibleParagraphs = paragraphs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-        nodes.forEach(node => {
-            const rect = node.getBoundingClientRect();
-            // Check if this node overlaps the checkpoint
-            if (rect.top <= checkPoint && rect.bottom >= checkPoint) {
-                activeEl = node;
+    // Auto-switch page when activeId changes externally (e.g. sidebar click)
+    useEffect(() => {
+        if (!activeId) return;
+
+        const index = paragraphs.findIndex(p => String(p.id) === String(activeId));
+        if (index !== -1) {
+            const targetPage = Math.floor(index / ITEMS_PER_PAGE) + 1;
+            if (targetPage !== page) {
+                setPage(targetPage);
+                // Optional: scroll to top of container when page changes via external nav
+                if (containerRef.current) containerRef.current.scrollTop = 0;
             } else {
-                // If not overlapping, find closest
-                const dist = Math.min(Math.abs(rect.top - checkPoint), Math.abs(rect.bottom - checkPoint)); // Distance to block
-                if (dist < minDist) {
-                    minDist = dist;
-                    if (!activeEl) activeEl = node;
-                }
-            }
-        });
-
-        if (activeEl) {
-            const newId = activeEl.getAttribute('data-id');
-            // Ensure we parse to same type (string vs number)
-            if (newId && String(newId) !== String(activeId)) {
-                // We use a debounce or just set it? 
-                // Setting state on scroll can be heavy, but for just ID it's usually fine.
-                // To avoid too many renders/updates to context, we might check if it's the same.
-                // The check `String(newId) !== String(activeId)` handles that.
-                setActiveId(Number(newId)); // Assuming IDs are numbers based on data
+                // Same page, just scroll to it after render
+                setTimeout(() => {
+                    const el = containerRef.current?.querySelector(`.paragraph[data-id="${activeId}"]`);
+                    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }, 100);
             }
         }
+    }, [activeId, paragraphs]); // Depend on activeId changes
+
+    // Scroll to top when page manually changes
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = 0;
+        }
+    }, [page]);
+
+    // Simple active detection acts different in page mode.
+    // We can just rely on manual selection or click for now, OR keep the scroll spy for just this page.
+    const handleScroll = () => {
+        // (Omitted for brevity/stability: relying on click/manual active for now improves stability)
+        // If user wants scroll-spy within the page, we can re-add it strictly for visibleParagraphs.
     };
 
-    // Scroll to active paragraph on load / when activeId changes EXTERNALLY (e.g. sidebar click)
-    // We need to distinguish between "scroll caused by user" and "scroll caused by activeId prop change"
-    // Usually, we only auto-scroll if it's an initial load or a distinct navigation action.
-    // But here activeId drives the view? 
-    // If user scrolls, activeId updates. If we then scroll TO that ID, we fight the user.
-    // So ONLY scroll if the change didn't come from our own detector?
-    // A simple way is to track "last detected ID".
+    const goPrev = () => setPage(p => Math.max(1, p - 1));
+    const goNext = () => setPage(p => Math.min(totalPages, p + 1));
 
-    useEffect(() => {
-        if (isInitialScroll.current && paragraphs.length > 0 && activeId && containerRef.current) {
-            const el = containerRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
-            if (el) {
-                el.scrollIntoView({ block: 'center', behavior: 'auto' });
-                isInitialScroll.current = false;
-            } else if (!activeId) {
-                // No active ID? Set first as active
-                if (paragraphs[0]) setActiveId(paragraphs[0].id);
-                isInitialScroll.current = false;
-            }
+    const handlePageSubmit = (e) => {
+        e.preventDefault();
+        const p = parseInt(inputPage, 10);
+        if (!isNaN(p) && p >= 1 && p <= totalPages) {
+            setPage(p);
+        } else {
+            setInputPage(page); // Reset if invalid
         }
-    }, [paragraphs, activeId, setActiveId]);
+    };
 
     return (
         <div
             className="reader-panel"
             ref={containerRef}
-            onScroll={handleScroll}
+            // onScroll={handleScroll} 
             style={{
                 height: '100vh',
                 overflowY: 'auto',
                 width: '100%',
-                scrollBehavior: 'smooth'
+                scrollBehavior: 'smooth',
+                position: 'relative' // For absolute positioning of controls if needed
             }}
         >
             <div className="reader-content" style={{
-                maxWidth: '800px', // Standard pleasant reading width
+                maxWidth: '800px',
                 margin: '0 auto',
                 padding: '40px 20px',
-                paddingBottom: '50vh' // Allow scrolling last item up
+                paddingBottom: '120px' // Space for footer controls
             }}>
-                {paragraphs.map((para, index) => (
+                {visibleParagraphs.map((para) => (
                     <Paragraph
                         key={para.id}
                         id={para.id}
@@ -95,6 +95,75 @@ export default function ReaderPanel({ paragraphs }) {
                         isActive={String(activeId) === String(para.id)}
                     />
                 ))}
+            </div>
+
+            {/* Floating Pagination Controls */}
+            <div style={{
+                position: 'fixed',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'var(--bg-paper, #fff)',
+                border: '1px solid var(--border-color, #ccc)',
+                borderRadius: '50px',
+                padding: '10px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                zIndex: 100
+            }}>
+                <button
+                    onClick={goPrev}
+                    disabled={page === 1}
+                    style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        border: 'none',
+                        background: page === 1 ? '#eee' : 'var(--theme-primary, #007bff)',
+                        color: page === 1 ? '#999' : '#fff',
+                        cursor: page === 1 ? 'default' : 'pointer'
+                    }}
+                >
+                    Prev
+                </button>
+
+                <form
+                    onSubmit={handlePageSubmit}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                    <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>Page</span>
+                    <input
+                        type="number"
+                        value={inputPage}
+                        onChange={(e) => setInputPage(e.target.value)}
+                        onBlur={handlePageSubmit}
+                        style={{
+                            width: '50px',
+                            textAlign: 'center',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            fontSize: '0.9rem'
+                        }}
+                    />
+                    <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>of {totalPages}</span>
+                </form>
+
+                <button
+                    onClick={goNext}
+                    disabled={page === totalPages}
+                    style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        border: 'none',
+                        background: page === totalPages ? '#eee' : 'var(--theme-primary, #007bff)',
+                        color: page === totalPages ? '#999' : '#fff',
+                        cursor: page === totalPages ? 'default' : 'pointer'
+                    }}
+                >
+                    Next
+                </button>
             </div>
         </div>
     );
