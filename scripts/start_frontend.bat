@@ -2,11 +2,11 @@
 echo Starting Frontend...
 
 :: Check directory
-if exist "frontend" (
-    cd frontend
+if exist "..\frontend" (
+    cd ..\frontend
 ) else (
-    if exist "src-react" (
-        cd src-react
+    if exist "..\src-react" (
+        cd ..\src-react
     ) else (
         echo Error: Could not find 'frontend' or 'src-react' directory.
         pause

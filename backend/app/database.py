@@ -8,7 +8,8 @@ import os
 from datetime import datetime
 from contextlib import contextmanager
 
-DATABASE_PATH = "reading_copilot_v3.db"
+# Prioritize environment variable, fallback to local file
+DATABASE_PATH = os.getenv("DB_PATH", "reading_copilot_v3.db")
 
 def get_db_connection():
     """Get a database connection with row factory"""
