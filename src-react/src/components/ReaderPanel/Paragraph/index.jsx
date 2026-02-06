@@ -8,6 +8,7 @@ export default function Paragraph({ id, data, isActive }) {
     const { mode, level, vocabLevel, VOCAB_MAP, bookData, setActiveId } = useApp();
     const [showTrans, setShowTrans] = useState(false);
     const [showAskBubble, setShowAskBubble] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [isInView, setIsInView] = useState(false);
     const paragraphRef = useRef(null);
 
@@ -116,7 +117,10 @@ export default function Paragraph({ id, data, isActive }) {
             ref={paragraphRef}
             className={`paragraph ${isActive ? 'active' : ''}`}
             data-id={id}
-            onClick={() => setActiveId(id)}
+            onClick={() => {
+                setActiveId(id);
+                if (isActive) setIsExpanded(!isExpanded);
+            }}
         >
             <div
                 className="para-text"
@@ -124,18 +128,32 @@ export default function Paragraph({ id, data, isActive }) {
                 onClick={handleWordClick}
             />
 
-            {/* Translation */}
-            <div className={`inline-trans ${showTrans ? 'show' : ''}`} id={`trans-${id}`}>
-                {effectiveData.translation || 'Translation not available.'}
-            </div>
-
-            {/* AI Companion */}
-            {effectiveData.companion && effectiveData.companion.text && (
-                <div className="ai-companion">
-                    <span className="companion-icon">🎙️</span>
-                    <span className="companion-text">{effectiveData.companion.text}</span>
+            {/* Auxiliary Content Wrapper (Translation + AI Analysis) */}
+            <div className={`para-aux ${isActive ? 'active' : ''}`}>
+                {/* Translation */}
+                <div className={`inline-trans ${showTrans ? 'show' : ''}`} id={`trans-${id}`}>
+                    {effectiveData.translation || 'Translation not available.'}
                 </div>
-            )}
+
+                {/* AI Companion (Collapsible) */}
+                {effectiveData.companion && effectiveData.companion.text && (
+                    <div className={`ai-companion ${isExpanded ? 'expanded' : 'collapsed'}`}>
+                        <div
+                            className="companion-header"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsExpanded(!isExpanded);
+                            }}
+                        >
+                            <span className="companion-icon">💡</span>
+                            {!isExpanded && <span className="companion-hint">View AI Insight</span>}
+                        </div>
+                        <div className="companion-body">
+                            <span className="companion-text">{effectiveData.companion.text}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Analyzing Indicator */}
             {isAnalyzing && (

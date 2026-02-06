@@ -33,10 +33,10 @@
 
 | 模式 | 隐喻 (Metaphor) | 核心价值 | 实现状态 |
 | :--- | :--- | :--- | :--- |
-| **☕️ Flow**<br>(心流模式) | **隐形眼镜**<br>(Contact Lens) | **无痛阅读**<br>极低干扰，仅提供必要的背景支持，保持沉浸感。 | ✅ 已实现 |
-| **🎓 Learn**<br>(学习模式) | **X光透视镜**<br>(X-Ray Specs) | **深度习得**<br>透视句法结构，进行苏格拉底式学习。 | ✅ 已实现 (迭代中) |
+| **☕️ Flow**<br>(心流模式) | **隐形眼镜**<br>(Contact Lens) | **无痛阅读**<br>极低干扰，仅提供必要的背景支持（悬浮条/工具栏），保持沉浸感。无右侧面板。 | ✅ 已实现 |
+| **🎓 Learn**<br>(学习模式) | **X光透视镜**<br>(X-Ray Specs) | **深度习得**<br>双栏布局，透视句法结构，进行苏格拉底式学习。 | ✅ 已实现 |
 
-> **📝 Review Mode**: 计划中，暂未实现。
+
 
 ### 2.2 三级交互脚手架 (The 3 Scaffolding Levels)
 
@@ -96,6 +96,8 @@
 *   **Lv 1:** 显示完整结构 + 中文含义 (辅助理解)
 *   **Lv 2:** 显示完整结构 + 中文含义
 *   **Lv 3:** 仅显示结构分析，隐藏中文含义 (Challenge)
+
+**实现状态：** ✅ 已实现 (v2.1)
 
 ### 3.2 教练问答 (Coach Q&A) - **NEW v2.1**
 
@@ -187,7 +189,6 @@
 *   **Magnetic Marker (磁吸光标):** 位于左侧边缘，指示当前阅读段落的视觉锚点。
 *   **Sentence X-Ray (句子X光):** 可视化展示句子结构的分析组件。
 *   **Coach Q&A (教练问答):** 用选择题引导用户思考的互动学习组件。
-*   **Ambient Context (氛围上下文):** Flow 模式下右侧显示的非文本辅助信息（如地图、人物图）。
 *   **Socratic Blur (苏格拉底遮罩):** 知识点默认不显示答案，仅显示线索的交互状态。
 
 ---
@@ -225,20 +226,22 @@
 - [x] Flow Mode Lv3 英文线索 (替代音标)
 
 ### Phase 4: Deep Learning 🔄 进行中
-- [ ] 句子X光 (Sentence X-Ray) 组件
+- [x] 句子X光 (Sentence X-Ray) 组件
 - [ ] 教练问答 (Coach Q&A) 组件
-- [ ] AI 分析结果缓存优化
+- [ ] AI 分析结果缓存优化 (Redis/Local Cache)
+- [ ] 后端 NLP 引擎性能调优 (长难句切分优化)
 
-### Phase 5: The Loop (Review Mode) 📅 计划中
-- [ ] 用户行为追踪 (记录查词历史)
-- [ ] 动态挖空渲染 (Blur effect)
-- [ ] 间隔重复算法 (Spaced Repetition)
+
 
 ---
 
 ## 8. 附录
 
 ### 相关文档
-- [技术栈文档](./TECH_STACK.md)
-- [本地启动指南](./LOCAL_STARTUP.md)
-- [后端配置指南](./BACKEND_SETUP.md)
+- [01 设计系统 (Design System)](./01_Design_System.md)
+- [02 心流模式 (Flow Mode)](./02_Mode_Flow.md)
+- [03 学习模式 (Learn Mode)](./03_Mode_Learn.md)
+- [04 数据结构 (Data Schema)](./04_Data_Schema.md)
+- [05 后端系统 (Backend System)](./05_Backend_System.md)
+- [06 后端配置 (Backend Setup)](./06_Backend_Setup.md)
+- [07 技术栈 (Tech Stack)](./07_Tech_Stack.md)

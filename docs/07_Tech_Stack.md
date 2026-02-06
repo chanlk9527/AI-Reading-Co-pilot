@@ -57,13 +57,13 @@ AI-Reading-Co-pilot/
 ├── index.html                       # 遗留入口 (已弃用)
 ├── index.css                        # 遗留样式 (已弃用)
 │
-└── 📁 文档/
+└── 📁 docs/
     ├── 00_Master_PRD.md             # 主控产品需求文档
     ├── 01_Design_System.md          # 设计系统文档
     ├── 02_Mode_Flow.md              # Flow 模式详细定义
     ├── 03_Mode_Learn.md             # Learn 模式详细定义
-    ├── 04_Mode_Review.md            # Review 模式详细定义
-    └── 05_Data_Schema.md            # 数据结构定义
+    ├── 04_Data_Schema.md            # 数据结构定义
+    └── 05_Backend_System.md         # 后端系统文档
 ```
 
 ---
@@ -288,8 +288,10 @@ location.reload();
 | [01_Design_System.md](./01_Design_System.md) | 设计系统规范 |
 | [02_Mode_Flow.md](./02_Mode_Flow.md) | Flow 模式详细定义 |
 | [03_Mode_Learn.md](./03_Mode_Learn.md) | Learn 模式详细定义 |
-| [04_Mode_Review.md](./04_Mode_Review.md) | Review 模式详细定义 |
-| [05_Data_Schema.md](./05_Data_Schema.md) | 完整数据结构定义 |
+| [04_Data_Schema.md](./04_Data_Schema.md) | 完整数据结构定义 |
+| [05_Backend_System.md](./05_Backend_System.md) | 后端系统描述 |
+| [06_Backend_Setup.md](./06_Backend_Setup.md) | 后端环境配置 |
+| [07_Tech_Stack.md](./07_Tech_Stack.md) | 技术栈概览 |
 
 ---
 

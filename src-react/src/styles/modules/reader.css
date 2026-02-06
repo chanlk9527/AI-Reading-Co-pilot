@@ -86,37 +86,33 @@
     background: transparent;
 }
 
+/* --- Auxiliary Content Area (Grouping) --- */
+.para-aux {
+    margin-top: 12px;
+    border-left: 2px solid transparent;
+    transition: border-left-color 0.3s ease;
+    padding-left: 0;
+}
+
+.para-aux.active {
+    border-left-color: var(--accent-gold);
+    padding-left: 4px;
+    /* Slight offset when active */
+}
+
 /* --- Inline Translation Area --- */
 .inline-trans {
     background-color: transparent;
-    /* Remove gray background */
     color: #4A5568;
-    /* Dark gray text */
-    border-left: 4px solid #F6E05E;
-    /* Yellow guide bar */
-    padding-left: 12px;
-    padding-right: 0;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    margin-top: 16px;
-    /* Increase space between English and Translation */
+    padding: 6px 12px;
+    margin-top: 8px;
     font-weight: 500;
-    /* Ensure readability */
-    border-radius: 0;
-    /* Remove rounded corners if any */
-    font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
-    /* Heavier/Clearer Chinese font */
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
     font-size: 1.05rem;
-    /* Slightly larger for readability */
     display: none;
     opacity: 0;
     transform: translateY(-5px);
     transition: all 0.3s ease;
-}
-
-.paragraph:hover .inline-trans {
-    border-left-color: #D69E2E;
-    /* Darker yellow on hover */
 }
 
 .inline-trans.show {
@@ -167,19 +163,23 @@
     /* Ensure proper box model */
 }
 
-/* Flow Mode Styles: Subtle Underline */
+/* Flow Mode Styles: Soft background or distinct underline */
 body.mode-flow .smart-word.has-card {
-    border-bottom: 2px solid rgba(0, 184, 148, 0.3);
-    /* Faint green underline */
+    border-bottom: 2px solid rgba(0, 184, 148, 0.2);
+    text-decoration-thickness: 2px;
+    transition: all 0.2s;
 }
 
 body.mode-flow .smart-word.has-card:hover {
-    background-color: rgba(0, 184, 148, 0.1);
+    background-color: rgba(0, 184, 148, 0.08);
+    border-bottom-color: rgba(0, 184, 148, 0.5);
 }
 
-/* Learn Mode Styles: Background Highlight */
+/* Learn Mode Styles: Grouping highlight */
 body.mode-learn .smart-word.has-card {
-    background-color: var(--highlight-color);
+    background-color: rgba(41, 128, 185, 0.08);
+    border-radius: 4px;
+    padding: 0 2px;
     border-bottom: 2px solid transparent;
 }
 
@@ -459,27 +459,73 @@ body.mode-learn .ask-bubble {
     animation: pulse 1s infinite;
 }
 
-/* ================= AI Companion () ================= */
+/* ================= AI Companion (Collapsible) ================= */
 .ai-companion {
-    margin-top: 12px;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-    border-radius: 8px;
-    border-left: 3px solid #667eea;
+    margin-top: 10px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(247, 250, 252, 0.95));
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.ai-companion.collapsed {
+    max-height: 40px;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.ai-companion.collapsed:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.companion-header {
+    padding: 8px 12px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
-    font-size: 0.9rem;
-    color: #555;
-    line-height: 1.5;
-    animation: fadeIn 0.4s ease;
+    user-select: none;
+}
+
+.ai-companion.collapsed .companion-header {
+    padding: 4px 0;
 }
 
 .companion-icon {
-    font-size: 1rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
+    filter: drop-shadow(0 0 5px rgba(255, 223, 0, 0.3));
+}
+
+.companion-hint {
+    font-size: 0.8rem;
+    color: #A0AEC0;
+    font-weight: 500;
+}
+
+.companion-body {
+    padding: 0 16px 16px 16px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.ai-companion.expanded .companion-body {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.ai-companion.expanded {
+    max-height: 500px;
+    border-left: 3px solid #667eea;
 }
 
 .companion-text {
     font-family: "PingFang SC", -apple-system, sans-serif;
+    font-size: 0.95rem;
+    color: #4A5568;
+    line-height: 1.6;
 }
