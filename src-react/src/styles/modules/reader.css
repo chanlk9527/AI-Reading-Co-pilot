@@ -1,0 +1,485 @@
+/* ================= Reader Panel ================= */
+
+/* Magnetic Cursor */
+.focus-marker {
+    position: absolute;
+    left: -40px;
+    /* Adjust left distance */
+    width: 4px;
+    background-color: var(--accent-gold);
+    border-radius: 4px;
+    transition: top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+    opacity: 0;
+    /* Initially hidden */
+    z-index: 100;
+}
+
+/* Cursor breathing animation */
+.focus-marker.active {
+    opacity: 1;
+    animation: pulse-gold 2s infinite;
+}
+
+.book-title {
+    font-family: "Georgia", serif;
+    font-size: 2.8rem;
+    color: var(--text-main);
+    margin-bottom: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+/* Paragraph Container */
+.paragraph {
+    margin-bottom: 56px;
+    /* Increased separation */
+    position: relative;
+    transition: opacity 0.4s;
+    padding: 10px 15px;
+    /* Add padding for better cursor positioning */
+    border-radius: 8px;
+}
+
+.paragraph:hover {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+/* English Text Area */
+.para-text {
+    font-family: 'Lora', 'Merriweather', 'Charter', serif;
+    font-size: 1.4rem;
+    line-height: 1.9;
+    /* Relaxed */
+    color: #2D3748;
+    /* Soft black */
+    transition: color 0.3s;
+    font-weight: 400;
+}
+
+.paragraph.active .para-text {
+    color: #000;
+    font-weight: 500;
+    /* Slightly bolder */
+}
+
+/* Enhanced Active State */
+.paragraph.active {
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* Soft shadow pop */
+    transform: scale(1.02);
+    /* Subtle zoom */
+    z-index: 10;
+}
+
+/* Lv5 Blur Mode (Cloze Mode) */
+.blur-word {
+    filter: blur(5px);
+    background: #eee;
+    transition: all 0.3s ease;
+    cursor: help;
+}
+
+.blur-word:hover {
+    filter: blur(0);
+    background: transparent;
+}
+
+/* --- Inline Translation Area --- */
+.inline-trans {
+    background-color: transparent;
+    /* Remove gray background */
+    color: #4A5568;
+    /* Dark gray text */
+    border-left: 4px solid #F6E05E;
+    /* Yellow guide bar */
+    padding-left: 12px;
+    padding-right: 0;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-top: 16px;
+    /* Increase space between English and Translation */
+    font-weight: 500;
+    /* Ensure readability */
+    border-radius: 0;
+    /* Remove rounded corners if any */
+    font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+    /* Heavier/Clearer Chinese font */
+    font-size: 1.05rem;
+    /* Slightly larger for readability */
+    display: none;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+}
+
+.paragraph:hover .inline-trans {
+    border-left-color: #D69E2E;
+    /* Darker yellow on hover */
+}
+
+.inline-trans.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.trans-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: #EEE;
+    color: #999;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0;
+    transform: scale(0.8);
+    position: absolute;
+    right: -35px;
+    /* Aligned with ask-trigger column */
+    top: 40px;
+    /* Below ask-trigger */
+}
+
+.paragraph:hover .trans-toggle,
+.paragraph.active .trans-toggle {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.trans-toggle:hover {
+    background: var(--accent-gold);
+    color: white;
+}
+
+/* --- Word Highlight & Interaction --- */
+.smart-word {
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    display: inline-block;
+    /* Ensure proper box model */
+}
+
+/* Flow Mode Styles: Subtle Underline */
+body.mode-flow .smart-word.has-card {
+    border-bottom: 2px solid rgba(0, 184, 148, 0.3);
+    /* Faint green underline */
+}
+
+body.mode-flow .smart-word.has-card:hover {
+    background-color: rgba(0, 184, 148, 0.1);
+}
+
+/* Learn Mode Styles: Background Highlight */
+body.mode-learn .smart-word.has-card {
+    background-color: var(--highlight-color);
+    border-bottom: 2px solid transparent;
+}
+
+body.mode-learn .smart-word.has-card:hover,
+body.mode-learn .smart-word.highlighted {
+    background-color: rgba(41, 128, 185, 0.3);
+    border-bottom-color: var(--theme-primary);
+    color: #000;
+}
+
+/* Instant Peek Tooltip (Flow & Learn Mode) */
+.peek-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 1000;
+}
+
+.smart-word:hover .peek-tooltip {
+    opacity: 1;
+}
+
+/* Interactive Word (Flow Mode Lv2 - Click to Toggle) */
+.smart-word.interactive-word {
+    cursor: pointer;
+}
+
+.smart-word.interactive-word:active {
+    transform: scale(0.98);
+}
+
+.smart-word.interactive-word .peek-tooltip {
+    transition: opacity 0.15s, background 0.2s;
+}
+
+/* Inline Definition Tag (Learn Mode Level 1) */
+.inline-def-tag {
+    font-size: 0.8em;
+    color: #7F8C8D;
+    font-weight: normal;
+    margin-left: 4px;
+    vertical-align: baseline;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    pointer-events: none;
+}
+
+/* ================= Ask AI (Sparkle) ================= */
+.ask-trigger {
+    position: absolute;
+    right: -40px;
+    /* In the right margin */
+    top: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    background: transparent;
+    z-index: 100;
+}
+
+.ask-trigger:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.paragraph.active .ask-trigger {
+    opacity: 0.4;
+    /* Subtle by default */
+    top: 10px;
+    /* Align with top text */
+}
+
+/* Hovering the paragraph or the trigger itself makes it more visible */
+.paragraph:hover .ask-trigger,
+.ask-trigger:hover {
+    opacity: 1;
+}
+
+/* The Whisper Bubble (Chat Overlay) */
+.ask-bubble {
+    position: absolute;
+    right: -320px;
+    /* To the right of the paragraph initially */
+    top: 0;
+    width: 300px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 15px;
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-height: 400px;
+    overflow: hidden;
+}
+
+.ask-bubble.show {
+    display: flex;
+}
+
+/* Ask bubble header with close button */
+.ask-bubble-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.ask-bubble-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+.ask-bubble-close:hover {
+    color: #ef4444;
+    transform: scale(1.1);
+}
+
+/* In Learn mode, use fixed positioning to overlay on right side */
+body.mode-learn .ask-bubble {
+    position: fixed;
+    right: 20px;
+    top: 100px;
+    left: auto;
+}
+
+.ask-input {
+    width: 100%;
+    border: 1px solid #EEE;
+    background: #FAFAFA;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    resize: none;
+    box-sizing: border-box;
+    /* Prevent overflow */
+}
+
+.ask-input:focus {
+    background: #FFF;
+    border-color: var(--theme-primary);
+}
+
+.ask-history {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.msg-user {
+    align-self: flex-end;
+    background: var(--theme-primary);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px 8px 0 8px;
+    max-width: 80%;
+}
+
+.msg-ai {
+    align-self: flex-start;
+    background: #F0F2F5;
+    color: #333;
+    padding: 6px 10px;
+    border-radius: 0 8px 8px 8px;
+    max-width: 90%;
+    max-width: 90%;
+    line-height: 1.5;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    /* Allow wrapping */
+    gap: 8px;
+    margin-top: 10px;
+    padding-bottom: 5px;
+    /* overflow-x: auto; Removed scrolling */
+}
+
+.suggestion-chips::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar Chrome */
+}
+
+.ask-chip {
+    background: #fff;
+    border: 1px solid #E1E5EB;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+}
+
+.ask-chip:hover {
+    background: var(--theme-primary);
+    color: white;
+    border-color: var(--theme-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.msg-ai p {
+    margin: 0.5em 0;
+}
+
+.msg-ai p:first-child {
+    margin-top: 0;
+}
+
+.msg-ai p:last-child {
+    margin-bottom: 0;
+}
+
+.msg-ai strong {
+    color: #2C3E50;
+    font-weight: 700;
+}
+
+.msg-ai ul,
+.msg-ai ol {
+    margin: 0.5em 0;
+    padding-left: 1.4em;
+}
+
+.msg-ai li {
+    margin-bottom: 0.3em;
+}
+
+.msg-thinking {
+    align-self: flex-start;
+    color: #AAA;
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-left: 10px;
+    animation: pulse 1s infinite;
+}
+
+/* ================= AI Companion () ================= */
+.ai-companion {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.5;
+    animation: fadeIn 0.4s ease;
+}
+
+.companion-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.companion-text {
+    font-family: "PingFang SC", -apple-system, sans-serif;
+}

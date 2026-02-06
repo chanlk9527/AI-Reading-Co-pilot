@@ -5,7 +5,7 @@ import { useParagraphAnalysis } from './useAnalysis';
 import AskBubble from './AskBubble';
 
 export default function Paragraph({ id, data, isActive }) {
-    const { mode, level, vocabLevel, VOCAB_MAP, bookData } = useApp();
+    const { mode, level, vocabLevel, VOCAB_MAP, bookData, setActiveId } = useApp();
     const [showTrans, setShowTrans] = useState(false);
     const [showAskBubble, setShowAskBubble] = useState(false);
     const [isInView, setIsInView] = useState(false);
@@ -116,6 +116,7 @@ export default function Paragraph({ id, data, isActive }) {
             ref={paragraphRef}
             className={`paragraph ${isActive ? 'active' : ''}`}
             data-id={id}
+            onClick={() => setActiveId(id)}
         >
             <div
                 className="para-text"

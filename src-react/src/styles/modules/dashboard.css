@@ -1,0 +1,450 @@
+/* Dashbaord UI Components */
+
+/* Level Capsule */
+.level-capsule {
+    background: #F0F2F5;
+    border-radius: 12px;
+    padding: 4px;
+    display: flex;
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+}
+
+.level-capsule.small {
+    width: 200px;
+}
+
+.capsule-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(33.33% - 5px);
+    background: #FFF;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index: 1;
+}
+
+.capsule-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #95A5A6;
+    cursor: pointer;
+    z-index: 2;
+    position: relative;
+    padding: 10px 0;
+    transition: color 0.3s;
+}
+
+.level-capsule[data-active="1"] .capsule-indicator {
+    transform: translateX(0%);
+    border-top: 2px solid var(--lv-easy);
+}
+
+.level-capsule[data-active="2"] .capsule-indicator {
+    transform: translateX(100%);
+    border-top: 2px solid var(--lv-mid);
+}
+
+.level-capsule[data-active="3"] .capsule-indicator {
+    transform: translateX(200%);
+    border-top: 2px solid var(--lv-hard);
+}
+
+.level-capsule button.active-text {
+    color: #2C3E50;
+}
+
+.level-info {
+    font-size: 0.75rem;
+    color: #AAA;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+/* 仪表盘内容区 */
+.dashboard-content {
+    flex: 1;
+    min-height: 0;
+    /* Critical for flex scrolling - allows flex item to shrink */
+    padding: 20px 30px 40px 30px;
+    /* Reduced top padding since floating-controls moved to left in Learn mode */
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    margin-bottom: 4px;
+}
+
+.current-para-info {
+    flex: 1;
+}
+
+.para-preview {
+    color: white;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    opacity: 0.95;
+    font-family: "Georgia", serif;
+}
+
+.btn-reanalyze-global {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+}
+
+.btn-reanalyze-global:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-reanalyze-global:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-reanalyze-global:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.module-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    flex-shrink: 0;
+    /* Prevent shrinking to ensure scrolling works */
+}
+
+.module-header {
+    padding: 12px 16px;
+    background: linear-gradient(to right, #FAFBFC, #FFF);
+    border-bottom: 1px solid #F0F0F0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #B0B0B0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 核心知识卡片 (Socratic Style) */
+.knowledge-item {
+    padding: 16px;
+    border-bottom: 1px dashed #EEE;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.knowledge-item:hover {
+    background: #FAFAFA;
+}
+
+.knowledge-item:last-child {
+    border-bottom: none;
+}
+
+.knowledge-item.active-card-highlight {
+    background-color: #e3f2fd;
+    /* Light Blue */
+    border-left: 4px solid var(--theme-primary);
+}
+
+/* 未揭示状态 (Guess Mode) */
+.k-guess-mode .k-def,
+.k-guess-mode .k-context {
+    display: none;
+}
+
+.k-guess-mode .k-clue {
+    display: block;
+}
+
+.k-guess-mode::after {
+    content: "Tap to Reveal";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--accent-action);
+    background: rgba(93, 63, 211, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+/* 揭示状态 */
+.k-reveal-mode .k-clue {
+    display: none;
+}
+
+.k-reveal-mode .k-def,
+.k-reveal-mode .k-context {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+.k-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.k-word {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #2C3E50;
+}
+
+.k-ipa {
+    font-size: 0.85rem;
+    color: #999;
+    font-family: "Lucida Sans Unicode", sans-serif;
+}
+
+.k-clue {
+    display: none;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9rem;
+    border-left: 2px solid var(--accent-action);
+    padding-left: 8px;
+    margin-top: 5px;
+}
+
+.k-clue::before {
+    content: "🤔 Hint: ";
+    font-style: normal;
+    font-weight: bold;
+}
+
+.k-def {
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.k-context {
+    font-size: 0.85rem;
+    color: #7F8C8D;
+    background: #F2F4F7;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* Insight */
+.insight-body {
+    padding: 16px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #555;
+}
+
+.insight-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+    color: white;
+    background: #2C3E50;
+}
+
+/* ================= Sentence X-Ray ================= */
+.xray-card {
+    border-left: 3px solid var(--theme-primary);
+    background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+}
+
+.xray-body {
+    padding: 16px;
+}
+
+/* Pattern Section */
+.xray-pattern {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.xray-pattern-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.xray-pattern-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--theme-primary);
+    background: rgba(41, 128, 185, 0.1);
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* Breakdown Section */
+.xray-breakdown {
+    font-size: 0.9rem;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-family: "PingFang SC", -apple-system, sans-serif;
+}
+
+/* Keywords Section */
+.xray-keywords {
+    margin-bottom: 12px;
+}
+
+.xray-keywords-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.xray-keyword-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.xray-keyword-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.xray-keyword-word {
+    font-weight: 700;
+    color: #2563eb;
+    font-family: "Georgia", serif;
+    background: rgba(37, 99, 235, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.xray-keyword-role {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-family: "PingFang SC", -apple-system, sans-serif;
+}
+
+/* Explanation Section */
+.xray-explanation {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-gold);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.xray-explanation-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.xray-explanation-text {
+    font-size: 0.9rem;
+    color: #5a5a5a;
+    line-height: 1.5;
+    font-family: "PingFang SC", -apple-system, sans-serif;
+}
+
+/* Debate Button */
+.btn-debate {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #EEE;
+    background: #FFF;
+    color: var(--accent-action);
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-debate:hover {
+    border-color: var(--accent-action);
+    background: rgba(93, 63, 211, 0.05);
+}
+
+/* Ambient Context Card (Flow Mode Dashboard) */
+.ambient-card {
+    background: #FFF;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.5s;
+}
+
+.ambient-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+.ambient-info {
+    padding: 15px;
+}
+
+.ambient-title {
+    font-weight: 700;
+    color: #2D3436;
+    margin-bottom: 5px;
+}
+
+.ambient-desc {
+    font-size: 0.85rem;
+    color: #636E72;
+    line-height: 1.5;
+}

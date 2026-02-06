@@ -1,0 +1,329 @@
+/* Mode Switcher Styles */
+.mode-switcher {
+    display: flex;
+    background: #F0F2F5;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.mode-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 8px;
+    color: #95A5A6;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.mode-btn.active {
+    background: #FFF;
+    color: var(--theme-primary);
+    /* Uses current theme color */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.mode-switcher.compact {
+    margin: 0;
+    width: auto;
+    background: #F0F2F5;
+    padding: 3px;
+    border-radius: 10px;
+}
+
+.mode-switcher.compact .mode-btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+/* ================= Floating Controls ================= */
+.floating-controls {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    /* Wrapper handles hover area */
+    padding: 10px;
+    margin: -10px;
+    /* Offset padding to keep position but increase hit area */
+    transition: all 0.3s ease;
+}
+
+/* Learn Mode: Move to left to avoid overlap with copilot-panel */
+body.mode-learn .floating-controls {
+    /* left: 30px; */
+    /* right: auto; */
+    /* alignItems: flex-start; */
+    /* Removed override to keep controls on the right */
+}
+
+/* --- Collapsed State (Default) --- */
+.control-collapsed-view {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top right;
+    white-space: nowrap;
+}
+
+.control-collapsed-view::before {
+    content: "⚙️";
+    font-size: 1rem;
+}
+
+.floating-controls:hover .control-collapsed-view {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+    pointer-events: none;
+    position: absolute;
+    /* Take out of flow */
+    top: 10px;
+    right: 10px;
+}
+
+/* --- Expanded State (Hover) --- */
+.control-expanded-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute;
+    /* Overlay on top of collapsed */
+    top: 10px;
+    right: 10px;
+}
+
+.floating-controls:hover .control-expanded-content {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    position: relative;
+    /* Return to flow */
+    top: 0;
+    right: 0;
+}
+
+.control-inner {
+    display: flex;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 8px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.import-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: #F0F2F5;
+    /* Match mode switcher bg */
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.import-btn:hover {
+    background: #E1E5EB;
+    transform: scale(1.05);
+}
+
+/* ================= Import Modal ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    /* backdrop-filter: blur(5px); Removed for performance */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    display: flex;
+    /* Added display flex to ensure visibility when shown */
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.import-tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #F0F2F5;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 0;
+    cursor: pointer;
+    font-weight: 500;
+    color: #999;
+    opacity: 0.7;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    opacity: 1;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+#importText,
+#importUrl {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #EEE;
+    border-radius: 12px;
+    background: #FAFAFA;
+    font-family: inherit;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    /* Fix overflow */
+}
+
+#importText {
+    height: 150px;
+    resize: none;
+}
+
+#importText:focus,
+#importUrl:focus {
+    outline: none;
+    border-color: var(--theme-primary);
+    background: white;
+}
+
+.hint-text {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    border: none;
+    background: #F0F2F5;
+    color: #555;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary {
+    padding: 10px 24px;
+    border: none;
+    background: var(--theme-primary);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(9, 132, 227, 0.3);
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--theme-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}

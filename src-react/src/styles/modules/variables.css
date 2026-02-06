@@ -1,0 +1,18 @@
+:root {
+    --bg-body: #F2F4F7;
+    --bg-paper: #FFFFFF;
+    --text-main: #2C3E50;
+    --text-secondary: #95A5A6;
+
+    /* Default Theme (will be overridden by JS) */
+    --theme-primary: #00B894;
+    --theme-bg-light: #F0FDF4;
+    --highlight-color: rgba(0, 184, 148, 0.2);
+
+    --accent-gold: #D4AF37;
+    --accent-action: #5D3FD3;
+
+    --lv-easy: #27AE60;
+    --lv-mid: #2980B9;
+    --lv-hard: #C0392B;
+}
