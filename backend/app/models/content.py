@@ -35,9 +35,13 @@ class SentenceResponse(BaseModel):
     id: int
     text_id: int
     sentence_index: int
+    paragraph_index: Optional[int] = None
+    sentence_in_paragraph: Optional[int] = None
     content: str
     translation: Optional[str]
     analysis: Optional[dict]
+    source_engine: Optional[str] = None
+    segmentation_confidence: Optional[float] = None
 
 class SentenceUpdate(BaseModel):
     translation: Optional[str] = None

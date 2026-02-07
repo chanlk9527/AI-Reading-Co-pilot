@@ -1,12 +1,12 @@
 @echo off
+set "SCRIPT_DIR=%~dp0"
 echo Starting Frontend...
 
-:: Use pushd to change directory temporarily
-if exist "..\frontend" (
-    pushd "..\frontend"
+if exist "%SCRIPT_DIR%..\..\frontend" (
+    pushd "%SCRIPT_DIR%..\..\frontend"
 ) else (
-    if exist "..\src-react" (
-        pushd "..\src-react"
+    if exist "%SCRIPT_DIR%..\..\src-react" (
+        pushd "%SCRIPT_DIR%..\..\src-react"
     ) else (
         echo Error: Could not find 'frontend' or 'src-react' directory.
         pause
@@ -14,16 +14,12 @@ if exist "..\frontend" (
     )
 )
 
-:: Install dependencies if missing
 if not exist "node_modules" (
     echo Installing dependencies...
     call npm install
 )
 
-:: Start Dev Server
 start "AI Reading Co-pilot Frontend" cmd /k "npm run dev"
-
-:: Return to original directory
 popd
 
 echo Frontend started in a new window.

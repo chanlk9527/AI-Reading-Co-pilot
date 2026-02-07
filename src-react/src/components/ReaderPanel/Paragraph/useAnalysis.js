@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useApp } from '../../../context/AppContext';
 import { api } from '../../../services/api';
+import { SENTENCE_ANALYSIS_ENABLED } from '../../../services/config';
 
 export function useParagraphAnalysis({ id, data, isActive, isInView }) {
     const { updateBookData, bookData } = useApp();
@@ -10,6 +11,10 @@ export function useParagraphAnalysis({ id, data, isActive, isInView }) {
 
     // Auto-analyze when active
     useEffect(() => {
+        if (!SENTENCE_ANALYSIS_ENABLED) {
+            return;
+        }
+
         const currentData = { ...data, ...(bookData[id] || {}) };
 
         const hasKnowledge = currentData.knowledge?.length > 0;

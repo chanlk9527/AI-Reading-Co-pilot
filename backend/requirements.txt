@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+httpx
+edge-tts
+PyJWT
+python-multipart
+spacy
+pymupdf
+pdfplumber

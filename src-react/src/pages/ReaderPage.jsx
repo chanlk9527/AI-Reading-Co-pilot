@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,19 +8,103 @@ import ReaderPanel from '../components/ReaderPanel/ReaderPanel';
 import CopilotPanel from '../components/CopilotPanel/CopilotPanel';
 import ImportModal from '../components/ImportModal/ImportModal';
 import { demoParagraphs, demoBookData } from '../data/demoData';
+import { SENTENCE_ANALYSIS_ENABLED } from '../services/config';
 
 export default function ReaderPage() {
+    const ITEMS_PER_PAGE = 20;
     const { textId } = useParams();
     const { token } = useAuth();
     const { mode, level, vocabLevel, activeId, updateBookData, setActiveId, switchMode, changeLevel, changeVocabLevel } = useApp();
     const [paragraphs, setParagraphs] = useState([]);
+    const [readerPage, setReaderPage] = useState(1);
+    const [totalReaderPages, setTotalReaderPages] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(false);
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [textTitle, setTextTitle] = useState('');
 
     // Config Sync Debounce
     const syncTimeoutRef = useRef(null);
     // Removed [saving, setSaving] state as saveScaffolding is removed
+
+    const buildParagraphsFromSentences = useCallback((sentences) => {
+        const groups = new Map();
+
+        sentences.forEach((sentence) => {
+            const paragraphIndex = Number.isInteger(sentence.paragraph_index)
+                ? sentence.paragraph_index
+                : sentence.sentence_index;
+            const existing = groups.get(paragraphIndex);
+
+            if (!existing) {
+                groups.set(paragraphIndex, {
+                    paragraph_index: paragraphIndex,
+                    id: sentence.id,
+                    textParts: [sentence.content],
+                    translationParts: sentence.translation ? [sentence.translation] : [],
+                    knowledge: sentence.analysis?.knowledge || [],
+                    insight: sentence.analysis?.insight || { tag: '分析', text: '暂无解析' },
+                    xray: sentence.analysis?.xray || null,
+                    companion: sentence.analysis?.companion || null
+                });
+                return;
+            }
+
+            existing.textParts.push(sentence.content);
+            if (sentence.translation) existing.translationParts.push(sentence.translation);
+            if (!existing.xray && sentence.analysis?.xray) existing.xray = sentence.analysis.xray;
+            if (!existing.companion && sentence.analysis?.companion) existing.companion = sentence.analysis.companion;
+            if (existing.insight?.text === '暂无解析' && sentence.analysis?.insight) {
+                existing.insight = sentence.analysis.insight;
+            }
+
+            const incomingKnowledge = sentence.analysis?.knowledge || [];
+            if (incomingKnowledge.length) {
+                const merged = [...existing.knowledge];
+                incomingKnowledge.forEach((item) => {
+                    if (!merged.some((k) => k.key === item.key)) {
+                        merged.push(item);
+                    }
+                });
+                existing.knowledge = merged;
+            }
+        });
+
+        return Array.from(groups.values())
+            .sort((a, b) => a.paragraph_index - b.paragraph_index)
+            .map((group) => ({
+                id: group.id,
+                paragraph_index: group.paragraph_index,
+                text: group.textParts.join(' ').replace(/\s+/g, ' ').trim(),
+                translation: group.translationParts.join(' ').replace(/\s+/g, ' ').trim() || '暂无翻译',
+                knowledge: group.knowledge,
+                insight: group.insight,
+                xray: group.xray,
+                companion: group.companion
+            }));
+    }, []);
+
+    const hydrateParagraphsToBookData = useCallback((mappedParas) => {
+        mappedParas.forEach((p) => {
+            updateBookData(p.id, {
+                text: p.text,
+                knowledge: p.knowledge || [],
+                insight: p.insight || { tag: '分析', text: '暂无解析' },
+                translation: p.translation || '暂无翻译',
+                xray: p.xray || null,
+                companion: p.companion || null
+            });
+        });
+    }, [updateBookData]);
+
+    const applySentencePayload = useCallback((items, paging) => {
+        const mappedParas = buildParagraphsFromSentences(items);
+        hydrateParagraphsToBookData(mappedParas);
+        setParagraphs(mappedParas);
+        setReaderPage(paging?.page || 1);
+        setTotalReaderPages(Math.max(1, paging?.totalPages || 1));
+        return mappedParas;
+    }, [buildParagraphsFromSentences, hydrateParagraphsToBookData]);
 
     // Apply mode class to body element
     useEffect(() => {
@@ -32,60 +116,7 @@ export default function ReaderPage() {
 
     // Load content based on textId
     useEffect(() => {
-        const loadContent = async () => {
-            setLoading(true);
-
-            if (textId) {
-                // Load from backend
-                try {
-                    // 1. Get Text Info
-                    const text = await api.getTextById(token, textId);
-                    setTextTitle(text.title);
-
-                    // Restore Reading Progress & Settings
-                    if (text.reading_mode) switchMode(text.reading_mode);
-                    if (text.scaffold_level) changeLevel(text.scaffold_level);
-                    if (text.vocab_level) changeVocabLevel(text.vocab_level);
-                    if (text.current_paragraph_id) setActiveId(text.current_paragraph_id);
-
-                    // 2. Get Sentences (Flat list)
-                    const paras = await api.getSentences(token, textId);
-
-                    const mappedParas = paras.map(p => {
-                        // Populate Context with latest data
-                        const analysis = p.analysis || {};
-                        updateBookData(p.id, {
-                            text: p.content,  // Add text for CopilotPanel preview
-                            knowledge: analysis.knowledge || [],
-                            insight: analysis.insight || { tag: '分析', text: '暂无解析' },
-                            translation: p.translation || '暂无翻译',
-                            xray: analysis.xray || null,
-                            companion: analysis.companion || null
-                        });
-
-                        return {
-                            id: p.id,
-                            text: p.content,
-                            sentence_index: p.sentence_index,
-                            knowledge: analysis.knowledge || [],
-                            insight: analysis.insight,
-                            translation: p.translation,
-                            xray: analysis.xray,
-                            companion: analysis.companion || null
-                        };
-                    });
-
-                    setParagraphs(mappedParas);
-                } catch (err) {
-                    console.error('Failed to load text:', err);
-                    loadDemoContent();
-                }
-            } else {
-                loadDemoContent();
-            }
-
-            setLoading(false);
-        };
+        let cancelled = false;
 
         const loadDemoContent = () => {
             setTextTitle('Demo: Pride and Prejudice');
@@ -97,10 +128,70 @@ export default function ReaderPage() {
                 });
             });
             setParagraphs(demoParagraphs);
+            setReaderPage(1);
+            setTotalReaderPages(1);
+        };
+
+        const loadContent = async () => {
+            setLoading(true);
+
+            if (textId) {
+                // Load from backend
+                try {
+                    // 1. Get Text Info
+                    const text = await api.getTextById(token, textId);
+                    if (cancelled) return;
+                    setTextTitle(text.title);
+
+                    // Restore Reading Progress & Settings
+                    if (text.reading_mode) switchMode(text.reading_mode);
+                    if (text.scaffold_level) changeLevel(text.scaffold_level);
+                    if (text.vocab_level) changeVocabLevel(text.vocab_level);
+                    // 2. Load current paragraph page only (avoid loading whole book at once)
+                    const currentSentenceId = Number(text.current_paragraph_id);
+                    const sentenceQuery = Number.isInteger(currentSentenceId) && currentSentenceId > 0
+                        ? { paragraphPageSize: ITEMS_PER_PAGE, aroundSentenceId: currentSentenceId }
+                        : { paragraphPageSize: ITEMS_PER_PAGE, paragraphPage: 1 };
+
+                    const { items, paging } = await api.getSentences(token, textId, sentenceQuery);
+                    if (cancelled) return;
+                    const mappedParas = applySentencePayload(items, paging);
+
+                    if (text.current_paragraph_id && mappedParas.some((p) => String(p.id) === String(text.current_paragraph_id))) {
+                        setActiveId(text.current_paragraph_id);
+                    } else if (mappedParas.length > 0) {
+                        setActiveId(mappedParas[0].id);
+                    } else {
+                        setActiveId(null);
+                    }
+                } catch (err) {
+                    console.error('Failed to load text:', err);
+                    loadDemoContent();
+                }
+            } else {
+                loadDemoContent();
+            }
+
+            if (!cancelled) {
+                setLoading(false);
+            }
         };
 
         loadContent();
-    }, [textId, token, updateBookData, switchMode, changeLevel, changeVocabLevel, setActiveId]);
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        textId,
+        token,
+        updateBookData,
+        switchMode,
+        changeLevel,
+        changeVocabLevel,
+        setActiveId,
+        applySentencePayload,
+        ITEMS_PER_PAGE
+    ]);
 
     // Sync Progress & Settings to Backend
     useEffect(() => {
@@ -120,6 +211,38 @@ export default function ReaderPage() {
         return () => clearTimeout(syncTimeoutRef.current);
     }, [mode, level, vocabLevel, activeId, textId, token]);
 
+    const handlePageChange = useCallback(async (nextPage) => {
+        if (!textId || !token || pageLoading) return;
+        if (!Number.isInteger(nextPage) || nextPage < 1) return;
+        if (nextPage === readerPage) return;
+
+        setPageLoading(true);
+        try {
+            const { items, paging } = await api.getSentences(token, textId, {
+                paragraphPage: nextPage,
+                paragraphPageSize: ITEMS_PER_PAGE
+            });
+            const mappedParas = applySentencePayload(items, paging);
+            const hasCurrentActive = mappedParas.some((p) => String(p.id) === String(activeId));
+            if (!hasCurrentActive) {
+                setActiveId(mappedParas.length > 0 ? mappedParas[0].id : null);
+            }
+        } catch (err) {
+            console.error('Failed to switch paragraph page:', err);
+        } finally {
+            setPageLoading(false);
+        }
+    }, [
+        textId,
+        token,
+        pageLoading,
+        readerPage,
+        ITEMS_PER_PAGE,
+        applySentencePayload,
+        activeId,
+        setActiveId
+    ]);
+
     const handleImport = async (newParagraphs) => {
         const formatted = newParagraphs.map((p, index) => {
             const id = `import-p${index}`;
@@ -138,6 +261,8 @@ export default function ReaderPage() {
             };
         });
         setParagraphs(formatted);
+        setReaderPage(1);
+        setTotalReaderPages(1);
 
         // Removed saveScaffolding call as it's no longer needed/available.
         // If import needs to be saved, it should be handled by a specific API call.
@@ -145,6 +270,7 @@ export default function ReaderPage() {
 
     // Re-analyze handler
     const handleReanalyze = async (paragraphId) => {
+        if (!SENTENCE_ANALYSIS_ENABLED) return;
         if (!paragraphId) return;
 
         // Use loose comparison (==) because activeId from getAttribute is a string
@@ -217,8 +343,18 @@ export default function ReaderPage() {
             <FloatingControls onImport={() => setImportModalOpen(true)} />
 
             <div className="app-container" id="appContainer">
-                <ReaderPanel paragraphs={paragraphs} title={textTitle} />
-                <CopilotPanel onReanalyze={handleReanalyze} />
+                <ReaderPanel
+                    paragraphs={paragraphs}
+                    title={textTitle}
+                    page={readerPage}
+                    totalPages={totalReaderPages}
+                    onPageChange={textId ? handlePageChange : null}
+                    pageLoading={pageLoading}
+                />
+                <CopilotPanel
+                    onReanalyze={handleReanalyze}
+                    sentenceAnalysisEnabled={SENTENCE_ANALYSIS_ENABLED}
+                />
             </div>
 
             <ImportModal

@@ -1,10 +1,11 @@
 @echo off
+set "SCRIPT_DIR=%~dp0"
 echo Stopping existing backend server...
-call stop_server.bat
+call "%SCRIPT_DIR%stop_server.bat"
 
 echo Starting backend server...
-if exist "..\backend" (
-    cd ..\backend
+if exist "%SCRIPT_DIR%..\..\backend" (
+    cd /d "%SCRIPT_DIR%..\..\backend"
 ) else (
     echo Error: Could not find backend directory
     pause

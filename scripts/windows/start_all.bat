@@ -1,8 +1,9 @@
 @echo off
+set "SCRIPT_DIR=%~dp0"
 echo Starting All Services...
 echo 1. Starting Backend...
-call .\start_server.bat
+call "%SCRIPT_DIR%start_server.bat"
 timeout /t 2 >nul
 echo 2. Starting Frontend...
-call .\start_frontend.bat
+call "%SCRIPT_DIR%start_frontend.bat"
 echo All services started!

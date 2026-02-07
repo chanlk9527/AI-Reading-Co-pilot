@@ -30,9 +30,16 @@ source venv/bin/activate
 运行以下命令安装服务器运行所需的 Python 包：
 
 ```bash
-pip install fastapi uvicorn edge-tts PyJWT
+pip install fastapi uvicorn edge-tts PyJWT httpx python-multipart spacy pymupdf
 ```
-*注意：`server.py` 中使用了 `edge-tts` 进行语音合成，`PyJWT` 进行用户认证。*
+*注意：`server.py` 中使用了 `edge-tts` 进行语音合成，`PyJWT` 进行用户认证；`/pdf/upload` 使用 `pymupdf` 做版面感知段落切分。*
+
+也可直接使用项目内依赖文件：
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
 
 ## 🚀 启动服务器
 
@@ -48,11 +55,11 @@ uvicorn server:app --reload --port 8000
 
 ### 方式 B: 使用启动脚本 (仅限 macOS/Linux)
 
-如果在 macOS 或 Linux 上，可以直接运行根目录下的脚本：
+如果在 macOS 或 Linux 上，可以直接运行 `scripts/mac/` 下的脚本：
 
 ```bash
-chmod +x start_server.sh
-./start_server.sh
+chmod +x scripts/mac/*.sh
+./scripts/mac/start_server.sh
 ```
 
 ## 🔍 验证运行
@@ -64,7 +71,7 @@ chmod +x start_server.sh
 
 如果看到### 1. 启动服务
 
-**推荐方式**: 在根目录直接运行 `restart_server.bat` (Windows) 或 `restart_server.sh` (Mac/Linux)。
+**推荐方式**: 在根目录直接运行 `scripts/windows/restart_server.bat` (Windows) 或 `scripts/mac/restart_server.sh` (Mac/Linux)。
 
 **手动方式**:
 ```bash

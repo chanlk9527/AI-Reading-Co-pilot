@@ -77,7 +77,7 @@ localStorage.setItem('ALIYUN_API_KEY', 'sk-...'); // 请替换为您实际的密
   - **`src/components/`**: UI 组件（ReaderPanel, CopilotPanel 等）。
   - **`src/services/`**: API 集成（AI 服务）。
   - **`src/styles/`**: 全局 CSS (`index.css`)。
-- **`start_server.sh` / `server.py`**: 旧版/实验性 Python 后端（用于 TTS）。*主 React 应用当前不需要此部分。*
+- **`scripts/mac/*.sh` / `scripts/windows/*.bat` / `backend/server.py`**: 本地启动脚本与 Python 后端（用于 TTS 与 API）。
 - **`js/` & `*.html`**: 旧版原生 JS 代码（已弃用）。
 
 ## ❓ 常见问题解答

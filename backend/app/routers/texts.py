@@ -4,12 +4,19 @@ from app.database import get_db
 from app.models.content import TextCreate, TextUpdate, TextResponse, TextProgressUpdate
 from app.routers.auth import get_current_user
 from app.services.nlp import sentencize
+from app.services.text_segmenter import segment_text_into_paragraphs
 import logging
 import json
 import re
 
 router = APIRouter(prefix="/texts", tags=["Texts"])
 logger = logging.getLogger(__name__)
+
+
+def _split_pdf_paragraphs(content: str) -> List[str]:
+    if not content or not content.strip():
+        return []
+    return [segment.strip() for segment in re.split(r"\n\s*\n+", content) if segment.strip()]
 
 @router.get("", response_model=List[TextResponse])
 async def list_texts(user = Depends(get_current_user)):
@@ -50,16 +57,62 @@ async def create_text(data: TextCreate, user = Depends(get_current_user)):
             (user["id"], data.title, data.content, scaffolding_json)
         )
         text_id = cursor.lastrowid
-        
-        # Sentencize
-        sentences = sentencize(data.content)
-        if not sentences:
-            sentences = [p.strip() for p in re.split(r'\n+', data.content) if p.strip()]
 
-        if sentences:
-            sent_values = [(text_id, i, s) for i, s in enumerate(sentences)]
+        source_engine = None
+        segmentation_confidence = None
+        is_pdf_import = False
+        if data.scaffolding_data and isinstance(data.scaffolding_data, dict):
+            pdf_import = data.scaffolding_data.get("pdf_import") or {}
+            if isinstance(pdf_import, dict):
+                is_pdf_import = True
+                source_engine = pdf_import.get("source_engine")
+                segmentation_confidence = pdf_import.get("segmentation_confidence")
+
+        if is_pdf_import:
+            # Keep paragraph boundaries produced by /pdf/upload.
+            paragraphs = _split_pdf_paragraphs(data.content)
+        else:
+            paragraphs = segment_text_into_paragraphs(data.content)
+
+        if not paragraphs:
+            paragraphs = [data.content.strip()] if data.content.strip() else []
+
+        sent_values = []
+        sentence_index = 0
+        for paragraph_index, paragraph in enumerate(paragraphs):
+            paragraph_sentences = sentencize(paragraph)
+            if not paragraph_sentences:
+                paragraph_sentences = [paragraph]
+
+            for sentence_in_paragraph, sentence_text in enumerate(paragraph_sentences):
+                sent_values.append(
+                    (
+                        text_id,
+                        sentence_index,
+                        paragraph_index,
+                        sentence_in_paragraph,
+                        sentence_text,
+                        source_engine,
+                        segmentation_confidence
+                    )
+                )
+                sentence_index += 1
+
+        if sent_values:
             cursor.executemany(
-                "INSERT INTO sentences (text_id, sentence_index, content) VALUES (?, ?, ?)",
+                """
+                INSERT INTO sentences
+                (
+                    text_id,
+                    sentence_index,
+                    paragraph_index,
+                    sentence_in_paragraph,
+                    content,
+                    source_engine,
+                    segmentation_confidence
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
                 sent_values
             )
         
@@ -220,4 +273,6 @@ async def delete_text(text_id: int, user = Depends(get_current_user)):
         cursor.execute("SELECT id FROM texts WHERE id = ? AND user_id = ?", (text_id, user["id"]))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Text not found")
+        # Explicit cleanup for legacy databases that may lack effective FK cascade.
+        cursor.execute("DELETE FROM sentences WHERE text_id = ?", (text_id,))
         cursor.execute("DELETE FROM texts WHERE id = ?", (text_id,))

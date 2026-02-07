@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 
-export default function CopilotPanel({ onReanalyze }) {
+export default function CopilotPanel({ onReanalyze, sentenceAnalysisEnabled = true }) {
     const { mode, level, vocabLevel, activeId, bookData, VOCAB_MAP, revealedKeys, revealKey } = useApp();
     const [isReanalyzing, setIsReanalyzing] = useState(false);
 
@@ -31,7 +31,7 @@ export default function CopilotPanel({ onReanalyze }) {
     };
 
     const handleReanalyze = async () => {
-        if (!onReanalyze || isReanalyzing) return;
+        if (!sentenceAnalysisEnabled || !onReanalyze || isReanalyzing) return;
 
         setIsReanalyzing(true);
         try {
@@ -112,10 +112,12 @@ export default function CopilotPanel({ onReanalyze }) {
                     <button
                         className="btn-reanalyze-global"
                         onClick={handleReanalyze}
-                        disabled={isReanalyzing}
-                        title="重新分析整个段落（词汇+翻译+结构）"
+                        disabled={isReanalyzing || !sentenceAnalysisEnabled}
+                        title={sentenceAnalysisEnabled ? "重新分析整个段落（词汇+翻译+结构）" : "句子分析已临时关闭"}
                     >
-                        {isReanalyzing ? '⏳ 分析中...' : '🔄 重新分析'}
+                        {sentenceAnalysisEnabled
+                            ? (isReanalyzing ? '⏳ 分析中...' : '🔄 重新分析')
+                            : '⏸ 分析已关闭'}
                     </button>
                 </div>
 

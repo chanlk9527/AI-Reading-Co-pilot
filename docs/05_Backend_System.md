@@ -36,6 +36,8 @@
 - `content`: 英文原文。
 - `translation`: 中文翻译。
 - `analysis_json`: **核心分析数据**。存储一个 JSON 对象，包含 `knowledge`, `xray`, `companion`, `insight` 等字段。
+- `source_engine`: 导入来源引擎（如 `pymupdf`）。
+- `segmentation_confidence`: PDF 分段置信度（0-1，便于回归与诊断）。
 
 ---
 
@@ -46,6 +48,21 @@
 2. 调用 NLP 引擎 (Spacy) 进行分句。
 3. 将分句结果存入 `sentences` 表。
 4. 初始化阅读进度。
+
+### 3.1.1 PDF 导入增强流程 (Layout-Aware) 🆕
+`/pdf/upload` 已从“简单换行合并”升级为 `PyMuPDF` 单引擎版面切分管线：
+
+1. **页面提取**：使用 PyMuPDF `rawdict` 获取 block/line/span 坐标、字体、字号与文本。
+2. **版面识别**：检测单双栏、重复页眉页脚、脚注区域并剔除非正文元素。
+3. **边界评分**：基于 `vertical_gap / indent_jump / punctuation_end / list_marker / font_shift / section_heading / quote_balance` 计算段落边界分数。
+4. **语义补偿**：引号保护、列表保护、标题保护、跨页续段补偿。
+5. **质量报告**：返回段落预览、切分质量分数与低置信页，便于导入拦截与诊断。
+
+上传接口新增返回：
+- `paragraphs_preview`: 段落候选预览（含 bbox、confidence、signals）
+- `quality_score`: 全文切分质量评分（0-1）
+- `layout_flags`: 版面识别和降级状态
+- `engine_used`: 实际使用的引擎路径
 
 ### 3.2 分析 (Analyze)
 1. 前端触发单个句子/段落的分析。

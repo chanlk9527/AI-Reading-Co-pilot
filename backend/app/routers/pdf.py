@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from app.models.pdf import UploadQualityReport
 from app.routers.auth import get_current_user
+from app.services.pdf_segmenter import PDFSegmenter
 import fitz  # PyMuPDF
 import logging
 
@@ -12,9 +16,11 @@ MAX_TEXT_LENGTH = 100000000  # 100,000,000 characters
 MIN_TEXT_LENGTH = 100  # Minimum to detect scanned PDF
 
 
-@router.post("/upload")
+@router.post("/upload", response_model=UploadQualityReport)
 async def upload_pdf(
     file: UploadFile = File(...),
+    start_page: Optional[int] = Form(default=None),
+    end_page: Optional[int] = Form(default=None),
     user = Depends(get_current_user)
 ):
     """
@@ -39,98 +45,101 @@ async def upload_pdf(
             detail=f"文件过大，最大支持 {MAX_FILE_SIZE // (1024*1024)}MB"
         )
     
-    # Extract text from PDF
+    # Extract coarse text for scan detection
     try:
         doc = fitz.open(stream=content, filetype="pdf")
+        total_pages = doc.page_count
+        if total_pages <= 0:
+            doc.close()
+            raise HTTPException(status_code=400, detail="PDF 页数无效或为空")
+
+        effective_start = start_page if start_page is not None else 1
+        effective_end = end_page if end_page is not None else total_pages
+        if (
+            effective_start < 1
+            or effective_end < 1
+            or effective_start > effective_end
+            or effective_end > total_pages
+        ):
+            doc.close()
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "PDF_INVALID_PAGE_RANGE",
+                    "message": (
+                        f"页码范围无效：start_page={effective_start}, end_page={effective_end}, "
+                        f"总页数={total_pages}"
+                    ),
+                    "total_pages": total_pages,
+                },
+            )
+
         text_parts = []
-        
-        for page_num in range(doc.page_count):
-            page = doc[page_num]
+
+        for page_idx in range(effective_start - 1, effective_end):
+            page = doc[page_idx]
             page_text = page.get_text()
             text_parts.append(page_text)
-        
+
         doc.close()
         full_text = "\n".join(text_parts).strip()
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"PDF parsing error: {e}")
         raise HTTPException(status_code=400, detail=f"PDF 解析失败: {str(e)}")
-    
+
     # Check if it's a scanned PDF (too little text)
     if len(full_text) < MIN_TEXT_LENGTH:
         raise HTTPException(
             status_code=400,
             detail="检测到扫描版 PDF，暂不支持。请使用文字版 PDF 或直接粘贴文本。"
         )
-    
-    # Truncate if too long
-    truncated = False
-    if len(full_text) > MAX_TEXT_LENGTH:
-        full_text = full_text[:MAX_TEXT_LENGTH]
-        truncated = True
-        logger.info(f"PDF text truncated from {len(full_text)} to {MAX_TEXT_LENGTH} chars")
-    
-    # Clean up text (remove excessive whitespace and merge broken lines)
-    # Strategy: 
-    # 1. Split into lines
-    # 2. If a line ends with a hyphen, remove it and join with next line
-    # 3. If a line ends with punctuation (.!?) OR contains mostly whitespace, keep the newline
-    # 4. Otherwise, replace newline with space (merging lines)
-    
-    lines = full_text.split('\n')
-    cleaned_lines = []
-    current_paragraph = []
-    
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            # Empty line -> end of paragraph
-            if current_paragraph:
-                cleaned_lines.append(" ".join(current_paragraph))
-                current_paragraph = []
-            cleaned_lines.append("") # Keep empty line for structure
-            continue
-            
-        # Check if this line looks like the end of a sentence/paragraph
-        # (ends with punctuation, or purely title-like)
-        is_end_of_sentence = stripped[-1] in '.!?"\''
-        
-        # Heuristic: If line is very short relative to page width (unreliable without bbox, 
-        # but let's assume extremely short lines might be titles or endings)
-        
-        if stripped.endswith('-'):
-            # Hyphenation word - remove hyphen and join
-            current_paragraph.append(stripped[:-1])
-        else:
-            current_paragraph.append(stripped)
-            
-        # If it looks like a paragraph end (e.g. empty line follows, handled above), 
-        # but here we rely on the loop structure. 
-        # Simple approach: just accumulate. Merging happens at the end or empty lines.
-        # But wait, PDF extraction often leaves newlines after every visual line.
-        # We generally want to merge them UNLESS double newline.
-    
-    # Simple rigorous cleaning:
-    # 1. Replace single newlines with spaces
-    # 2. Replace multiple newlines with double newline (paragraph break)
-    
-    # Let's try a different regex-based approach for robustness
-    import re
-    # Normalize hyphens
-    text = full_text.replace('-\n', '') 
-    # Replace single newlines that are NOT followed by another newline with space
-    # (Matches newline not followed by newline)
-    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
-    # Collapse multiple spaces
-    text = re.sub(r'[ \t]+', ' ', text)
-    # Ensure paragraphs are separated by \n
-    cleaned_text = text.strip()
-    
-    return {
-        "success": True,
-        "filename": file.filename,
-        "text": cleaned_text,
-        "char_count": len(cleaned_text),
-        "truncated": truncated,
-        "message": "PDF 文本提取成功" + ("（文本过长，已截断）" if truncated else "")
+
+    # Segment PDF with layout-aware pipeline
+    try:
+        segmenter = PDFSegmenter(max_text_length=MAX_TEXT_LENGTH)
+        result = segmenter.segment(content, start_page=effective_start, end_page=effective_end)
+    except Exception as e:
+        logger.error("PDF segmentation error: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "PDF_SEGMENTATION_FAILED",
+                "message": f"PDF 分段解析失败: {str(e)}",
+                "engine_used": "unknown",
+            },
+        )
+
+    cleaned_text = result.cleaned_text
+    truncated = len(cleaned_text) >= MAX_TEXT_LENGTH
+    if truncated:
+        logger.info("PDF segmented text truncated to %s chars", MAX_TEXT_LENGTH)
+
+    preview_size = 20
+    preview = result.paragraphs[:preview_size]
+    message = "PDF 文本提取成功"
+    if truncated:
+        message += "（文本过长，已截断）"
+
+    layout_flags = dict(result.layout_flags)
+    layout_flags["source_engine"] = result.engine_used
+    layout_flags["total_pages"] = total_pages
+    layout_flags["selected_page_range"] = {
+        "start_page": effective_start,
+        "end_page": effective_end,
     }
+
+    return UploadQualityReport(
+        success=True,
+        filename=file.filename,
+        text=cleaned_text,
+        char_count=len(cleaned_text),
+        truncated=truncated,
+        message=message,
+        paragraphs_preview=preview,
+        quality_score=None,
+        layout_flags=layout_flags,
+        engine_used=result.engine_used,
+    )

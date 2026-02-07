@@ -1,7 +1,8 @@
 @echo off
+set "SCRIPT_DIR=%~dp0"
 echo Stopping All Services...
 echo 1. Stopping Frontend...
-call .\stop_frontend.bat
+call "%SCRIPT_DIR%stop_frontend.bat"
 echo 2. Stopping Backend...
-call .\stop_server.bat
+call "%SCRIPT_DIR%stop_server.bat"
 echo All services stopped!

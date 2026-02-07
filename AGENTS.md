@@ -34,7 +34,7 @@ AI-Reading-Co-pilot/
 │       ├── models/     # SQLAlchemy models
 │       └── services/   # Business logic
 ├── docs/               # Product & design documentation
-└── *.bat/*.sh          # Startup scripts
+└── scripts/            # Startup scripts (windows/*.bat, mac/*.sh)
 ```
 
 ---
@@ -75,19 +75,19 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
 # Or use startup scripts from project root:
-# Windows: restart_server.bat
-# Linux/Mac: ./start_server.sh
+# Windows: scripts/windows/restart_server.bat
+# Linux/Mac: ./scripts/mac/restart_server.sh
 ```
 
 ### Full Stack Startup
 ```bash
 # Windows
-start_frontend.bat   # Start frontend
-restart_server.bat   # Start backend
+scripts/windows/start_frontend.bat   # Start frontend
+scripts/windows/restart_server.bat   # Start backend
 
 # Linux/Mac
-./start_server.sh    # Start backend
-cd src-react && npm run dev  # Start frontend
+./scripts/mac/start_server.sh    # Start backend
+./scripts/mac/start_frontend.sh  # Start frontend
 ```
 
 ---

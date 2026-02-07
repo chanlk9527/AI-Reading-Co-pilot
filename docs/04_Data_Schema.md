@@ -12,6 +12,55 @@
     *   `content`: 原始英文文本。
     *   `translation`: 对应中文翻译。
     *   `analysis`: 核心 JSON 字段，包含 AI 生成的脚手架数据。
+    *   `source_engine`: 导入解析引擎（可选）。
+    *   `segmentation_confidence`: PDF 分段置信度（可选，0-1）。
+
+---
+
+## 1.1 PDF 导入质量报告 (Upload Quality Report) 🆕
+
+`POST /pdf/upload` 现在返回结构化质量报告，用于前端判断解析质量与调试：
+
+```json
+{
+  "success": true,
+  "filename": "sample.pdf",
+  "text": "完整正文（段落以双换行分隔）",
+  "char_count": 12345,
+  "truncated": false,
+  "message": "PDF 文本提取成功",
+  "paragraphs_preview": [
+    {
+      "text": "段落文本...",
+      "page_start": 1,
+      "page_end": 1,
+      "bbox": [72.0, 96.0, 520.0, 156.0],
+      "confidence": 0.88,
+      "signals": {
+        "vertical_gap": 0.64,
+        "indent_jump": 0.11
+      }
+    }
+  ],
+  "quality_score": 0.82,
+  "layout_flags": {
+    "detected_columns": "single|double|mixed",
+    "header_footer_removed": true,
+    "footnotes_removed": false,
+    "degraded_mode": false,
+    "low_conf_pages": [],
+    "source_engine": "pymupdf",
+    "segmentation_confidence": 0.82
+  },
+  "engine_used": "pymupdf"
+}
+```
+
+字段说明：
+- `paragraphs_preview`: 调试用段落样本（含页码、bbox、置信度、边界信号）。
+- `quality_score`: 全文切分质量分数（0-1）。
+- `layout_flags`: 版面识别/降级状态/低置信页信息。
+- `engine_used`: 当前实际使用的解析引擎。
 
 ---
 

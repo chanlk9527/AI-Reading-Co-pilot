@@ -86,12 +86,48 @@ export const api = {
         return response.json();
     },
 
-    async getSentences(token, textId) {
-        const response = await fetch(`${API_BASE_URL}/texts/${textId}/sentences`, {
+    async getSentences(token, textId, options = {}) {
+        const {
+            paragraphPage,
+            paragraphPageSize,
+            aroundSentenceId
+        } = options;
+
+        const params = new URLSearchParams();
+        if (Number.isInteger(paragraphPage) && paragraphPage > 0) {
+            params.set('paragraph_page', String(paragraphPage));
+        }
+        if (Number.isInteger(paragraphPageSize) && paragraphPageSize > 0) {
+            params.set('paragraph_page_size', String(paragraphPageSize));
+        }
+        if (Number.isInteger(aroundSentenceId) && aroundSentenceId > 0) {
+            params.set('around_sentence_id', String(aroundSentenceId));
+        }
+
+        const query = params.toString();
+        const url = query
+            ? `${API_BASE_URL}/texts/${textId}/sentences?${query}`
+            : `${API_BASE_URL}/texts/${textId}/sentences`;
+
+        const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Failed to fetch sentences');
-        return response.json();
+        const items = await response.json();
+
+        const pageHeader = response.headers.get('X-Paragraph-Page');
+        const sizeHeader = response.headers.get('X-Paragraph-Page-Size');
+        const totalHeader = response.headers.get('X-Paragraph-Total');
+        const totalPagesHeader = response.headers.get('X-Paragraph-Total-Pages');
+
+        const paging = {
+            page: pageHeader ? parseInt(pageHeader, 10) : null,
+            pageSize: sizeHeader ? parseInt(sizeHeader, 10) : null,
+            totalParagraphs: totalHeader ? parseInt(totalHeader, 10) : null,
+            totalPages: totalPagesHeader ? parseInt(totalPagesHeader, 10) : null
+        };
+
+        return { items, paging };
     },
 
     /* Split functionality removed in favor of Spacy backend import
@@ -141,9 +177,16 @@ export const api = {
         return response.json();
     },
 
-    async uploadPdf(token, file) {
+    async uploadPdf(token, file, options = {}) {
+        const { startPage, endPage } = options;
         const formData = new FormData();
         formData.append('file', file);
+        if (Number.isInteger(startPage) && startPage > 0) {
+            formData.append('start_page', String(startPage));
+        }
+        if (Number.isInteger(endPage) && endPage > 0) {
+            formData.append('end_page', String(endPage));
+        }
 
         const response = await fetch(`${API_BASE_URL}/pdf/upload`, {
             method: 'POST',
@@ -152,8 +195,26 @@ export const api = {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'PDF upload failed');
+            let errorPayload = {};
+            try {
+                errorPayload = await response.json();
+            } catch {
+                errorPayload = {};
+            }
+
+            const detail = errorPayload?.detail;
+            let message = 'PDF upload failed';
+            if (typeof detail === 'string') {
+                message = detail;
+            } else if (detail && typeof detail === 'object') {
+                message = detail.message || detail.code || message;
+            }
+
+            const err = new Error(message);
+            if (detail && typeof detail === 'object') {
+                err.detail = detail;
+            }
+            throw err;
         }
         return response.json();
     }
