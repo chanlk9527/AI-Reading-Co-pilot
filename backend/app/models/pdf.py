@@ -11,6 +11,15 @@ class ParagraphCandidate(BaseModel):
     signals: Dict[str, float] = Field(default_factory=dict)
 
 
+class RawAssetInfo(BaseModel):
+    asset_id: str
+    format: str
+    mime_type: str
+    filename: str
+    byte_size: int
+    relative_path: str
+
+
 class UploadQualityReport(BaseModel):
     success: bool = True
     filename: str
@@ -22,3 +31,4 @@ class UploadQualityReport(BaseModel):
     quality_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     layout_flags: Dict[str, object] = Field(default_factory=dict)
     engine_used: str
+    raw_asset: Optional[RawAssetInfo] = None

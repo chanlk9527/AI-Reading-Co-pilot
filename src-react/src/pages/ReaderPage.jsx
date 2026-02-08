@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import FloatingControls from '../components/FloatingControls/FloatingControls';
 import ReaderPanel from '../components/ReaderPanel/ReaderPanel';
+import RawReaderPanel from '../components/ReaderPanel/RawReaderPanel';
 import CopilotPanel from '../components/CopilotPanel/CopilotPanel';
 import ImportModal from '../components/ImportModal/ImportModal';
 import { demoParagraphs, demoBookData } from '../data/demoData';
@@ -33,9 +34,15 @@ export default function ReaderPage() {
     const [pageLoading, setPageLoading] = useState(false);
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [textTitle, setTextTitle] = useState('');
+    const [sentencesLoaded, setSentencesLoaded] = useState(false);
+    const [rawAssetInfo, setRawAssetInfo] = useState(null);
+    const [rawAssetUrl, setRawAssetUrl] = useState('');
+    const [rawAssetLoading, setRawAssetLoading] = useState(false);
+    const [rawAssetError, setRawAssetError] = useState('');
 
     // Config Sync Debounce
     const syncTimeoutRef = useRef(null);
+    const rawAssetUrlRef = useRef('');
     // Removed [saving, setSaving] state as saveScaffolding is removed
 
     const buildParagraphsFromSentences = useCallback((sentences) => {
@@ -155,6 +162,25 @@ export default function ReaderPage() {
         return mappedParas;
     }, [buildParagraphsFromSentences, hydrateParagraphsToBookData]);
 
+    const resolveRawAsset = useCallback((textRecord) => {
+        const scaffolding = textRecord?.scaffolding_data;
+        if (!scaffolding || typeof scaffolding !== 'object') return null;
+
+        const candidateImports = [
+            scaffolding.pdf_import,
+            scaffolding.epub_import
+        ];
+
+        for (const importMeta of candidateImports) {
+            if (!importMeta || typeof importMeta !== 'object') continue;
+            if (importMeta.raw_asset && typeof importMeta.raw_asset === 'object') {
+                return importMeta.raw_asset;
+            }
+        }
+
+        return null;
+    }, []);
+
     // Apply mode class to body element
     useEffect(() => {
         document.body.className = `mode-${mode}`;
@@ -169,6 +195,9 @@ export default function ReaderPage() {
 
         const loadDemoContent = () => {
             setTextTitle('Demo: Pride and Prejudice');
+            setRawAssetInfo(null);
+            setRawAssetError('');
+            setSentencesLoaded(true);
             // Include text in bookData for CopilotPanel preview support
             demoParagraphs.forEach(p => {
                 updateBookData(p.id, {
@@ -183,6 +212,9 @@ export default function ReaderPage() {
 
         const loadContent = async () => {
             setLoading(true);
+            setSentencesLoaded(false);
+            setRawAssetInfo(null);
+            setRawAssetError('');
 
             if (textId) {
                 // Load from backend
@@ -191,27 +223,41 @@ export default function ReaderPage() {
                     const text = await api.getTextById(token, textId);
                     if (cancelled) return;
                     setTextTitle(text.title);
+                    const nextRawAsset = resolveRawAsset(text);
+                    setRawAssetInfo(nextRawAsset);
+                    const restoredMode = text.reading_mode || 'flow';
 
                     // Restore Reading Progress & Settings
                     if (text.reading_mode) switchMode(text.reading_mode);
                     if (text.scaffold_level) changeLevel(text.scaffold_level);
                     if (text.vocab_level) changeVocabLevel(text.vocab_level);
-                    // 2. Load current paragraph page only (avoid loading whole book at once)
-                    const currentSentenceId = Number(text.current_paragraph_id);
-                    const sentenceQuery = Number.isInteger(currentSentenceId) && currentSentenceId > 0
-                        ? { paragraphPageSize: ITEMS_PER_PAGE, aroundSentenceId: currentSentenceId }
-                        : { paragraphPageSize: ITEMS_PER_PAGE, paragraphPage: 1 };
 
-                    const { items, paging } = await api.getSentences(token, textId, sentenceQuery);
-                    if (cancelled) return;
-                    const mappedParas = applySentencePayload(items, paging);
-
-                    if (text.current_paragraph_id && mappedParas.some((p) => String(p.id) === String(text.current_paragraph_id))) {
-                        setActiveId(text.current_paragraph_id);
-                    } else if (mappedParas.length > 0) {
-                        setActiveId(mappedParas[0].id);
-                    } else {
+                    const shouldSkipSentenceLoad = restoredMode === 'raw' && Boolean(nextRawAsset);
+                    if (shouldSkipSentenceLoad) {
+                        setParagraphs([]);
+                        setReaderPage(1);
+                        setTotalReaderPages(1);
                         setActiveId(null);
+                    } else {
+                        // 2. Load current paragraph page only (avoid loading whole book at once)
+                        const currentSentenceId = Number(text.current_paragraph_id);
+                        const sentenceQuery = Number.isInteger(currentSentenceId) && currentSentenceId > 0
+                            ? { paragraphPageSize: ITEMS_PER_PAGE, aroundSentenceId: currentSentenceId }
+                            : { paragraphPageSize: ITEMS_PER_PAGE, paragraphPage: 1 };
+
+                        const { items, paging } = await api.getSentences(token, textId, sentenceQuery);
+                        if (cancelled) return;
+                        const mappedParas = applySentencePayload(items, paging);
+
+                        if (text.current_paragraph_id && mappedParas.some((p) => String(p.id) === String(text.current_paragraph_id))) {
+                            setActiveId(text.current_paragraph_id);
+                        } else if (mappedParas.length > 0) {
+                            setActiveId(mappedParas[0].id);
+                        } else {
+                            setActiveId(null);
+                        }
+
+                        setSentencesLoaded(true);
                     }
                 } catch (err) {
                     console.error('Failed to load text:', err);
@@ -239,8 +285,107 @@ export default function ReaderPage() {
         changeVocabLevel,
         setActiveId,
         applySentencePayload,
+        resolveRawAsset,
         ITEMS_PER_PAGE
     ]);
+
+    // Lazy-load sentence data when switching from Raw mode back to Flow/Learn.
+    useEffect(() => {
+        if (!textId || !token) return;
+        if (loading || pageLoading) return;
+        if (mode === 'raw' || sentencesLoaded) return;
+
+        let cancelled = false;
+
+        const loadSentences = async () => {
+            setPageLoading(true);
+            try {
+                const { items, paging } = await api.getSentences(token, textId, {
+                    paragraphPage: 1,
+                    paragraphPageSize: ITEMS_PER_PAGE
+                });
+                if (cancelled) return;
+                const mappedParas = applySentencePayload(items, paging);
+                setActiveId(mappedParas.length > 0 ? mappedParas[0].id : null);
+                setSentencesLoaded(true);
+            } catch (err) {
+                console.error('Failed to lazy-load sentences after Raw mode:', err);
+            } finally {
+                if (!cancelled) setPageLoading(false);
+            }
+        };
+
+        loadSentences();
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        textId,
+        token,
+        mode,
+        loading,
+        pageLoading,
+        sentencesLoaded,
+        ITEMS_PER_PAGE,
+        applySentencePayload,
+        setActiveId
+    ]);
+
+    // Fetch raw asset as Blob URL for embedded reader.
+    useEffect(() => {
+        let cancelled = false;
+
+        const clearRawUrl = () => {
+            if (rawAssetUrlRef.current) {
+                URL.revokeObjectURL(rawAssetUrlRef.current);
+                rawAssetUrlRef.current = '';
+            }
+            setRawAssetUrl('');
+        };
+
+        if (mode !== 'raw' || !textId || !token) {
+            clearRawUrl();
+            setRawAssetLoading(false);
+            setRawAssetError('');
+            return;
+        }
+
+        if (!rawAssetInfo) {
+            clearRawUrl();
+            setRawAssetLoading(false);
+            setRawAssetError('当前文本没有可用的 Raw EPUB/PDF 资源');
+            return;
+        }
+
+        const loadRawAsset = async () => {
+            setRawAssetLoading(true);
+            setRawAssetError('');
+            clearRawUrl();
+
+            try {
+                const { blob } = await api.getRawAssetBlob(token, textId);
+                if (cancelled) return;
+                const nextUrl = URL.createObjectURL(blob);
+                rawAssetUrlRef.current = nextUrl;
+                setRawAssetUrl(nextUrl);
+            } catch (err) {
+                if (cancelled) return;
+                console.error('Failed to fetch raw asset:', err);
+                setRawAssetError('Raw 资源加载失败，请稍后重试');
+            } finally {
+                if (!cancelled) {
+                    setRawAssetLoading(false);
+                }
+            }
+        };
+
+        loadRawAsset();
+
+        return () => {
+            cancelled = true;
+            clearRawUrl();
+        };
+    }, [mode, textId, token, rawAssetInfo]);
 
     // Sync Progress & Settings to Backend
     useEffect(() => {
@@ -276,6 +421,7 @@ export default function ReaderPage() {
             if (!hasCurrentActive) {
                 setActiveId(mappedParas.length > 0 ? mappedParas[0].id : null);
             }
+            setSentencesLoaded(true);
         } catch (err) {
             console.error('Failed to switch paragraph page:', err);
         } finally {
@@ -312,6 +458,9 @@ export default function ReaderPage() {
         setParagraphs(formatted);
         setReaderPage(1);
         setTotalReaderPages(1);
+        setSentencesLoaded(true);
+        setRawAssetInfo(null);
+        setRawAssetError('');
 
         // Removed saveScaffolding call as it's no longer needed/available.
         // If import needs to be saved, it should be handled by a specific API call.
@@ -396,6 +545,7 @@ export default function ReaderPage() {
     }, [paragraphs, resolveSentenceForParagraph, token, updateBookData]);
 
     // Split functionality removed (Backend Spacy Import)
+    const isRawMode = mode === 'raw';
 
     if (loading) {
         return (
@@ -417,18 +567,30 @@ export default function ReaderPage() {
             <FloatingControls onImport={() => setImportModalOpen(true)} />
 
             <div className="app-container" id="appContainer">
-                <ReaderPanel
-                    paragraphs={paragraphs}
-                    title={textTitle}
-                    page={readerPage}
-                    totalPages={totalReaderPages}
-                    onPageChange={textId ? handlePageChange : null}
-                    pageLoading={pageLoading}
-                />
-                <CopilotPanel
-                    onReanalyze={handleReanalyze}
-                    sentenceAnalysisEnabled={SENTENCE_ANALYSIS_ENABLED}
-                />
+                {isRawMode ? (
+                    <RawReaderPanel
+                        title={textTitle}
+                        rawAssetUrl={rawAssetUrl}
+                        rawAssetInfo={rawAssetInfo}
+                        loading={rawAssetLoading}
+                        error={rawAssetError}
+                    />
+                ) : (
+                    <>
+                        <ReaderPanel
+                            paragraphs={paragraphs}
+                            title={textTitle}
+                            page={readerPage}
+                            totalPages={totalReaderPages}
+                            onPageChange={textId ? handlePageChange : null}
+                            pageLoading={pageLoading}
+                        />
+                        <CopilotPanel
+                            onReanalyze={handleReanalyze}
+                            sentenceAnalysisEnabled={SENTENCE_ANALYSIS_ENABLED}
+                        />
+                    </>
+                )}
             </div>
 
             <ImportModal

@@ -160,6 +160,18 @@ export const api = {
         return response.json();
     },
 
+    async getRawAssetBlob(token, textId) {
+        const response = await fetch(`${API_BASE_URL}/texts/${textId}/raw-asset`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch raw asset');
+        const blob = await response.blob();
+        return {
+            blob,
+            contentType: response.headers.get('Content-Type') || blob.type || ''
+        };
+    },
+
     async getCredits(token) {
         const response = await fetch(`${API_BASE_URL}/ai/credits`, {
             headers: { 'Authorization': `Bearer ${token}` }

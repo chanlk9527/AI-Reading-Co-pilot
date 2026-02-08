@@ -90,7 +90,8 @@ export default function LibraryPage() {
                     const pdfMeta = {
                         source_engine: result.engine_used || 'pymupdf',
                         segmentation_confidence: result.quality_score ?? null,
-                        layout_flags: result.layout_flags || {}
+                        layout_flags: result.layout_flags || {},
+                        raw_asset: result.raw_asset || null
                     };
                     // Create text with extracted content
                     await api.createText(token, {
@@ -105,7 +106,8 @@ export default function LibraryPage() {
                     const epubMeta = {
                         source_engine: result.engine_used || 'epub_zip_html',
                         segmentation_confidence: result.quality_score ?? null,
-                        layout_flags: result.layout_flags || {}
+                        layout_flags: result.layout_flags || {},
+                        raw_asset: result.raw_asset || null
                     };
                     await api.createText(token, {
                         title: result.filename.replace(/\.epub$/i, ''),

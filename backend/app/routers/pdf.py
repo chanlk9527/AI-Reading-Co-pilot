@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from app.models.pdf import UploadQualityReport
 from app.routers.auth import get_current_user
 from app.services.pdf_segmenter import PDFSegmenter
+from app.services.raw_asset_store import save_raw_asset
 import fitz  # PyMuPDF
 import logging
 
@@ -131,6 +132,14 @@ async def upload_pdf(
         "end_page": effective_end,
     }
 
+    raw_asset = save_raw_asset(
+        user_id=user["id"],
+        filename=file.filename,
+        content=content,
+        asset_format="pdf",
+        mime_type="application/pdf",
+    )
+
     return UploadQualityReport(
         success=True,
         filename=file.filename,
@@ -142,4 +151,5 @@ async def upload_pdf(
         quality_score=None,
         layout_flags=layout_flags,
         engine_used=result.engine_used,
+        raw_asset=raw_asset,
     )

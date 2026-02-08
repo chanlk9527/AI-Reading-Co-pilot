@@ -5,8 +5,13 @@ export default function FloatingControls({ onImport }) {
     const { mode, level, vocabLevel, switchMode, changeLevel, changeVocabLevel, LEVEL_DESCS } = useApp();
     const navigate = useNavigate();
 
-    const getModeLabel = () => mode === 'flow' ? 'Flow' : 'Learn';
+    const getModeLabel = () => {
+        if (mode === 'learn') return 'Learn';
+        if (mode === 'raw') return 'Raw';
+        return 'Flow';
+    };
     const getLevelLabel = () => 'Lv' + level;
+    const showScaffoldControls = mode !== 'raw';
 
     const backBtnStyle = {
         display: 'flex',
@@ -45,7 +50,9 @@ export default function FloatingControls({ onImport }) {
             </button>
 
             <div className="control-collapsed-view" id="collapsedLabel">
-                {getModeLabel()} • {getLevelLabel()} • {vocabLevel}
+                {showScaffoldControls
+                    ? `${getModeLabel()} • ${getLevelLabel()} • ${vocabLevel}`
+                    : `${getModeLabel()} • Native Reader`}
             </div>
 
             <div className="control-expanded-content">
@@ -64,6 +71,12 @@ export default function FloatingControls({ onImport }) {
                         >
                             Learn
                         </button>
+                        <button
+                            className={`mode-btn ${mode === 'raw' ? 'active' : ''}`}
+                            onClick={() => switchMode('raw')}
+                        >
+                            Raw
+                        </button>
                     </div>
 
                     {/* Import Button */}
@@ -71,53 +84,57 @@ export default function FloatingControls({ onImport }) {
                         📥
                     </button>
 
-                    {/* Level Capsule */}
-                    <div className="level-capsule small" data-active={level}>
-                        <div className="capsule-indicator"></div>
-                        <button
-                            className={`capsule-btn ${level === 1 ? 'active-text' : ''}`}
-                            onClick={() => changeLevel(1)}
-                        >
-                            1
-                        </button>
-                        <button
-                            className={`capsule-btn ${level === 2 ? 'active-text' : ''}`}
-                            onClick={() => changeLevel(2)}
-                        >
-                            2
-                        </button>
-                        <button
-                            className={`capsule-btn ${level === 3 ? 'active-text' : ''}`}
-                            onClick={() => changeLevel(3)}
-                        >
-                            3
-                        </button>
-                    </div>
+                    {showScaffoldControls ? (
+                        <>
+                            {/* Level Capsule */}
+                            <div className="level-capsule small" data-active={level}>
+                                <div className="capsule-indicator"></div>
+                                <button
+                                    className={`capsule-btn ${level === 1 ? 'active-text' : ''}`}
+                                    onClick={() => changeLevel(1)}
+                                >
+                                    1
+                                </button>
+                                <button
+                                    className={`capsule-btn ${level === 2 ? 'active-text' : ''}`}
+                                    onClick={() => changeLevel(2)}
+                                >
+                                    2
+                                </button>
+                                <button
+                                    className={`capsule-btn ${level === 3 ? 'active-text' : ''}`}
+                                    onClick={() => changeLevel(3)}
+                                >
+                                    3
+                                </button>
+                            </div>
 
-                    {/* Vocab Level Dropdown */}
-                    <select
-                        className="vocab-select"
-                        value={vocabLevel}
-                        onChange={(e) => changeVocabLevel(e.target.value)}
-                        style={{
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #E0E0E0',
-                            background: '#F0F2F5',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <option value="A1">A1</option>
-                        <option value="A2">A2</option>
-                        <option value="B1">B1</option>
-                        <option value="B2">B2</option>
-                        <option value="C1">C1</option>
-                        <option value="C2">C2</option>
-                    </select>
+                            {/* Vocab Level Dropdown */}
+                            <select
+                                className="vocab-select"
+                                value={vocabLevel}
+                                onChange={(e) => changeVocabLevel(e.target.value)}
+                                style={{
+                                    padding: '6px 10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #E0E0E0',
+                                    background: '#F0F2F5',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="A1">A1</option>
+                                <option value="A2">A2</option>
+                                <option value="B1">B1</option>
+                                <option value="B2">B2</option>
+                                <option value="C1">C1</option>
+                                <option value="C2">C2</option>
+                            </select>
+                        </>
+                    ) : null}
                 </div>
                 <div className="level-info" style={{ textAlign: 'right', paddingRight: '5px' }}>
-                    {LEVEL_DESCS[level - 1]}
+                    {showScaffoldControls ? LEVEL_DESCS[level - 1] : 'Raw EPUB/PDF Viewer'}
                 </div>
             </div>
         </div>

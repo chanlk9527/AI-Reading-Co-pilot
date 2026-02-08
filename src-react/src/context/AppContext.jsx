@@ -15,7 +15,7 @@ const LEVEL_DESCS = [
 ];
 
 export function AppProvider({ children }) {
-    const [mode, setMode] = useState('flow'); // 'flow' | 'learn'
+    const [mode, setMode] = useState('flow'); // 'flow' | 'learn' | 'raw'
     const [level, setLevel] = useState(2);     // Scaffolding Level (1-3)
     const [vocabLevel, setVocabLevel] = useState('A2'); // Vocabulary Proficiency
     const [activeId, setActiveId] = useState(null);

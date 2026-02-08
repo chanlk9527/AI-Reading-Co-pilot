@@ -7,5 +7,7 @@ __pycache__/
 # DB
 *.db
 ./backend.log
+./frontend.log
 ./backend/server_debug.log
+backend/storage/raw_assets/
 .tmp.driveupload/

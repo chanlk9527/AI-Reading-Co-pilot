@@ -4,6 +4,7 @@ import logging
 from app.models.pdf import UploadQualityReport
 from app.routers.auth import get_current_user
 from app.services.epub_segmenter import EPUBSegmenter
+from app.services.raw_asset_store import save_raw_asset
 
 router = APIRouter(prefix="/epub", tags=["EPUB"])
 logger = logging.getLogger(__name__)
@@ -58,6 +59,14 @@ async def upload_epub(
     layout_flags = dict(result.layout_flags)
     layout_flags["source_engine"] = result.engine_used
 
+    raw_asset = save_raw_asset(
+        user_id=user["id"],
+        filename=file.filename,
+        content=content,
+        asset_format="epub",
+        mime_type="application/epub+zip",
+    )
+
     return UploadQualityReport(
         success=True,
         filename=file.filename,
@@ -69,4 +78,5 @@ async def upload_epub(
         quality_score=None,
         layout_flags=layout_flags,
         engine_used=result.engine_used,
+        raw_asset=raw_asset,
     )
