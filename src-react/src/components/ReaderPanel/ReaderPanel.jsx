@@ -11,7 +11,7 @@ export default function ReaderPanel({
     onPageChange = null,
     pageLoading = false
 }) {
-    const { mode, activeId, setActiveId } = useApp();
+    const { mode, activeId, activeSentenceId, setActiveId, setActiveSentenceId } = useApp();
     const containerRef = useRef(null);
     const [localPage, setLocalPage] = useState(1);
     const [markerStyle, setMarkerStyle] = useState({ top: 0, height: 0, opacity: 0 });
@@ -62,6 +62,25 @@ export default function ReaderPanel({
         }, 80);
     }, [activeId, paragraphs, isServerPaging, currentPage]);
 
+    // Keep an active sentence for the current active paragraph.
+    useEffect(() => {
+        if (!activeId || !containerRef.current) return;
+
+        const activeParagraphPrefix = `${String(activeId)}::`;
+        if (typeof activeSentenceId === 'string' && activeSentenceId.startsWith(activeParagraphPrefix)) {
+            return;
+        }
+
+        const activeParagraphEl = containerRef.current.querySelector(`.paragraph[data-id="${activeId}"]`);
+        if (!activeParagraphEl) return;
+
+        const firstSentenceEl = activeParagraphEl.querySelector('.sentence-unit');
+        const firstSentenceId = firstSentenceEl?.getAttribute('data-sentence-id');
+        if (firstSentenceId) {
+            setActiveSentenceId(firstSentenceId);
+        }
+    }, [activeId, activeSentenceId, currentPage, paragraphs, setActiveSentenceId]);
+
     // Focus Marker Position Logic
     useEffect(() => {
         if (!activeId || !containerRef.current) {
@@ -104,6 +123,7 @@ export default function ReaderPanel({
             const targetY = containerRect.top + (containerRect.height * 0.4);
 
             let bestId = null;
+            let bestElement = null;
             let minDist = Infinity;
 
             const paraElements = container.querySelectorAll('.paragraph');
@@ -115,6 +135,7 @@ export default function ReaderPanel({
                 if (dist < minDist) {
                     minDist = dist;
                     bestId = el.getAttribute('data-id');
+                    bestElement = el;
                 }
             });
 
@@ -122,8 +143,83 @@ export default function ReaderPanel({
                 isScrollingRef.current = true;
                 setActiveId(bestId);
             }
+
+            if (!bestElement) return;
+
+            let bestSentenceId = null;
+            let sentenceMinDist = Infinity;
+            const sentenceElements = bestElement.querySelectorAll('.sentence-unit');
+
+            sentenceElements.forEach((sentenceEl) => {
+                const rect = sentenceEl.getBoundingClientRect();
+                const center = rect.top + (rect.height / 2);
+                const dist = Math.abs(center - targetY);
+
+                if (dist < sentenceMinDist) {
+                    sentenceMinDist = dist;
+                    bestSentenceId = sentenceEl.getAttribute('data-sentence-id');
+                }
+            });
+
+            if (bestSentenceId && bestSentenceId !== activeSentenceId) {
+                setActiveSentenceId(bestSentenceId);
+            }
         }, 100);
     };
+
+    useEffect(() => {
+        const handleSentenceKeyNav = (event) => {
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+
+            const targetTag = event.target?.tagName?.toLowerCase();
+            const isEditable = event.target?.isContentEditable
+                || targetTag === 'input'
+                || targetTag === 'textarea'
+                || targetTag === 'select';
+            if (isEditable) return;
+
+            const container = containerRef.current;
+            if (!container) return;
+
+            const sentenceElements = Array.from(container.querySelectorAll('.sentence-unit'));
+            if (sentenceElements.length === 0) return;
+
+            event.preventDefault();
+
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            let currentIndex = sentenceElements.findIndex(
+                (el) => el.getAttribute('data-sentence-id') === String(activeSentenceId)
+            );
+
+            if (currentIndex === -1) {
+                currentIndex = direction > 0 ? -1 : sentenceElements.length;
+            }
+
+            let nextIndex = currentIndex + direction;
+            nextIndex = Math.max(0, Math.min(sentenceElements.length - 1, nextIndex));
+            if (nextIndex === currentIndex) return;
+
+            const nextSentenceEl = sentenceElements[nextIndex];
+            if (!nextSentenceEl) return;
+
+            const nextSentenceId = nextSentenceEl.getAttribute('data-sentence-id');
+            const nextParagraphId = nextSentenceEl.getAttribute('data-paragraph-id');
+
+            if (nextSentenceId) {
+                setActiveSentenceId(nextSentenceId);
+            }
+
+            if (nextParagraphId && String(nextParagraphId) !== String(activeId)) {
+                isScrollingRef.current = true;
+                setActiveId(nextParagraphId);
+            }
+
+            nextSentenceEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        };
+
+        window.addEventListener('keydown', handleSentenceKeyNav);
+        return () => window.removeEventListener('keydown', handleSentenceKeyNav);
+    }, [activeSentenceId, activeId, setActiveId, setActiveSentenceId]);
 
     const goToPage = (targetPage) => {
         if (pageLoading) return;

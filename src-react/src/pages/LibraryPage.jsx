@@ -14,7 +14,7 @@ export default function LibraryPage() {
     const [importContent, setImportContent] = useState('');
     const [importing, setImporting] = useState(false);
     const [recharging, setRecharging] = useState(false);
-    const [importType, setImportType] = useState('text'); // 'text' or 'pdf'
+    const [importType, setImportType] = useState('text'); // 'text' | 'pdf' | 'epub'
     const [importFile, setImportFile] = useState(null);
     const [pdfStartPage, setPdfStartPage] = useState('');
     const [pdfEndPage, setPdfEndPage] = useState('');
@@ -44,35 +44,37 @@ export default function LibraryPage() {
                 alert('请填写标题和内容');
                 return;
             }
-        } else if (importType === 'pdf') {
+        } else if (importType === 'pdf' || importType === 'epub') {
             if (!importFile) {
-                alert('请选择 PDF 文件');
+                alert(importType === 'pdf' ? '请选择 PDF 文件' : '请选择 EPUB 文件');
                 return;
             }
 
-            const startRaw = (pdfStartPage || '').trim();
-            const endRaw = (pdfEndPage || '').trim();
-            if (startRaw) {
-                selectedStartPage = Number.parseInt(startRaw, 10);
-                if (!Number.isInteger(selectedStartPage) || selectedStartPage < 1) {
-                    alert('起始页码必须是大于 0 的整数');
+            if (importType === 'pdf') {
+                const startRaw = (pdfStartPage || '').trim();
+                const endRaw = (pdfEndPage || '').trim();
+                if (startRaw) {
+                    selectedStartPage = Number.parseInt(startRaw, 10);
+                    if (!Number.isInteger(selectedStartPage) || selectedStartPage < 1) {
+                        alert('起始页码必须是大于 0 的整数');
+                        return;
+                    }
+                }
+                if (endRaw) {
+                    selectedEndPage = Number.parseInt(endRaw, 10);
+                    if (!Number.isInteger(selectedEndPage) || selectedEndPage < 1) {
+                        alert('结束页码必须是大于 0 的整数');
+                        return;
+                    }
+                }
+                if (
+                    Number.isInteger(selectedStartPage)
+                    && Number.isInteger(selectedEndPage)
+                    && selectedStartPage > selectedEndPage
+                ) {
+                    alert('起始页码不能大于结束页码');
                     return;
                 }
-            }
-            if (endRaw) {
-                selectedEndPage = Number.parseInt(endRaw, 10);
-                if (!Number.isInteger(selectedEndPage) || selectedEndPage < 1) {
-                    alert('结束页码必须是大于 0 的整数');
-                    return;
-                }
-            }
-            if (
-                Number.isInteger(selectedStartPage)
-                && Number.isInteger(selectedEndPage)
-                && selectedStartPage > selectedEndPage
-            ) {
-                alert('起始页码不能大于结束页码');
-                return;
             }
         }
 
@@ -95,6 +97,20 @@ export default function LibraryPage() {
                         title: result.filename.replace('.pdf', ''),
                         content: result.text,
                         scaffolding_data: { pdf_import: pdfMeta }
+                    });
+                }
+            } else if (importType === 'epub') {
+                const result = await api.uploadEpub(token, importFile);
+                if (result.success) {
+                    const epubMeta = {
+                        source_engine: result.engine_used || 'epub_zip_html',
+                        segmentation_confidence: result.quality_score ?? null,
+                        layout_flags: result.layout_flags || {}
+                    };
+                    await api.createText(token, {
+                        title: result.filename.replace(/\.epub$/i, ''),
+                        content: result.text,
+                        scaffolding_data: { epub_import: epubMeta }
                     });
                 }
             } else {
@@ -149,6 +165,15 @@ export default function LibraryPage() {
         const next = e.target.checked;
         setAutoAnalysisEnabled(next);
         setAutoAnalysisEnabledState(next);
+    };
+
+    const handleImportTypeChange = (nextType) => {
+        setImportType(nextType);
+        setImportFile(null);
+        if (nextType !== 'pdf') {
+            setPdfStartPage('');
+            setPdfEndPage('');
+        }
     };
 
     return (
@@ -360,6 +385,11 @@ export default function LibraryPage() {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                    gap: 12px;
+                }
+                .text-card-info {
+                    flex: 1;
+                    min-width: 0;
                 }
                 .text-card-title {
                     font-size: 1.1rem;
@@ -367,7 +397,8 @@ export default function LibraryPage() {
                     color: #1e293b;
                     margin: 0 0 8px 0;
                     line-height: 1.4;
-                    flex: 1;
+                    overflow-wrap: anywhere;
+                    word-break: break-word;
                 }
                 .text-card-meta {
                     font-size: 0.8rem;
@@ -390,11 +421,18 @@ export default function LibraryPage() {
                     border: none;
                     color: #94a3b8;
                     cursor: pointer;
-                    padding: 4px 8px;
-                    font-size: 1.1rem;
+                    width: 32px;
+                    height: 32px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
+                    font-size: 1rem;
                     border-radius: 6px;
                     transition: all 0.2s;
                     flex-shrink: 0;
+                    position: relative;
+                    z-index: 1;
                 }
                 .delete-btn:hover {
                     background: #fee2e2;
@@ -709,7 +747,7 @@ export default function LibraryPage() {
                                     onClick={() => navigate(`/reader/${text.id}`)}
                                 >
                                     <div className="text-card-header">
-                                        <div>
+                                        <div className="text-card-info">
                                             <h3 className="text-card-title">{text.title}</h3>
                                             <div className="text-card-meta">
                                                 更新于 {new Date(text.updated_at).toLocaleDateString('zh-CN')}
@@ -789,15 +827,21 @@ export default function LibraryPage() {
                                 <div className="import-tabs">
                                     <button
                                         className={`import-tab ${importType === 'text' ? 'active' : ''}`}
-                                        onClick={() => setImportType('text')}
+                                        onClick={() => handleImportTypeChange('text')}
                                     >
                                         ✏️ 文本粘贴
                                     </button>
                                     <button
                                         className={`import-tab ${importType === 'pdf' ? 'active' : ''}`}
-                                        onClick={() => setImportType('pdf')}
+                                        onClick={() => handleImportTypeChange('pdf')}
                                     >
                                         📄 PDF 上传
+                                    </button>
+                                    <button
+                                        className={`import-tab ${importType === 'epub' ? 'active' : ''}`}
+                                        onClick={() => handleImportTypeChange('epub')}
+                                    >
+                                        📚 EPUB 上传
                                     </button>
                                 </div>
 
@@ -850,11 +894,13 @@ export default function LibraryPage() {
                                             <input
                                                 type="file"
                                                 className="file-input"
-                                                accept=".pdf"
+                                                accept={importType === 'pdf' ? '.pdf' : '.epub'}
                                                 onChange={(e) => setImportFile(e.target.files[0])}
                                             />
                                             <div style={{ pointerEvents: 'none' }}>
-                                                <div style={{ fontSize: '2rem', marginBottom: 12 }}>📄</div>
+                                                <div style={{ fontSize: '2rem', marginBottom: 12 }}>
+                                                    {importType === 'pdf' ? '📄' : '📚'}
+                                                </div>
                                                 {importFile ? (
                                                     <div>
                                                         <div style={{ fontWeight: 600, color: '#1e293b' }}>
@@ -867,62 +913,74 @@ export default function LibraryPage() {
                                                 ) : (
                                                     <div>
                                                         <div style={{ fontWeight: 600, color: '#1e293b' }}>
-                                                            点击或拖拽 PDF 文件到这里
+                                                            {importType === 'pdf'
+                                                                ? '点击或拖拽 PDF 文件到这里'
+                                                                : '点击或拖拽 EPUB 文件到这里'}
                                                         </div>
                                                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: 4 }}>
-                                                            支持文字版 PDF (最大 10MB)
+                                                            {importType === 'pdf'
+                                                                ? '支持文字版 PDF (最大 10MB)'
+                                                                : '支持标准 EPUB (最大 20MB)'}
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-                                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                                                    起始页码（可选）
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="1"
-                                                    placeholder="例如 5"
-                                                    value={pdfStartPage}
-                                                    onChange={(e) => setPdfStartPage(e.target.value)}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '10px 12px',
-                                                        border: '2px solid #e5e7eb',
-                                                        borderRadius: 10,
-                                                        fontSize: '0.95rem',
-                                                        boxSizing: 'border-box'
-                                                    }}
-                                                />
+                                        {importType === 'pdf' ? (
+                                            <>
+                                                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                                                            起始页码（可选）
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="1"
+                                                            placeholder="例如 5"
+                                                            value={pdfStartPage}
+                                                            onChange={(e) => setPdfStartPage(e.target.value)}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '10px 12px',
+                                                                border: '2px solid #e5e7eb',
+                                                                borderRadius: 10,
+                                                                fontSize: '0.95rem',
+                                                                boxSizing: 'border-box'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                                                            结束页码（可选）
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="1"
+                                                            placeholder="例如 30"
+                                                            value={pdfEndPage}
+                                                            onChange={(e) => setPdfEndPage(e.target.value)}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '10px 12px',
+                                                                border: '2px solid #e5e7eb',
+                                                                borderRadius: 10,
+                                                                fontSize: '0.95rem',
+                                                                boxSizing: 'border-box'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                                    留空表示全书；只填一个页码时，另一端会自动取第一页或最后一页。
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                                将按 EPUB 章节顺序自动提取正文并分段。
                                             </div>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                                                    结束页码（可选）
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="1"
-                                                    placeholder="例如 30"
-                                                    value={pdfEndPage}
-                                                    onChange={(e) => setPdfEndPage(e.target.value)}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '10px 12px',
-                                                        border: '2px solid #e5e7eb',
-                                                        borderRadius: 10,
-                                                        fontSize: '0.95rem',
-                                                        boxSizing: 'border-box'
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                            留空表示全书；只填一个页码时，另一端会自动取第一页或最后一页。
-                                        </div>
+                                        )}
                                     </>
                                 )}
                             </div>

@@ -13,7 +13,7 @@ router = APIRouter(prefix="/texts", tags=["Texts"])
 logger = logging.getLogger(__name__)
 
 
-def _split_pdf_paragraphs(content: str) -> List[str]:
+def _split_imported_paragraphs(content: str) -> List[str]:
     if not content or not content.strip():
         return []
     return [segment.strip() for segment in re.split(r"\n\s*\n+", content) if segment.strip()]
@@ -60,17 +60,19 @@ async def create_text(data: TextCreate, user = Depends(get_current_user)):
 
         source_engine = None
         segmentation_confidence = None
-        is_pdf_import = False
+        preserve_paragraphs = False
         if data.scaffolding_data and isinstance(data.scaffolding_data, dict):
-            pdf_import = data.scaffolding_data.get("pdf_import") or {}
-            if isinstance(pdf_import, dict):
-                is_pdf_import = True
-                source_engine = pdf_import.get("source_engine")
-                segmentation_confidence = pdf_import.get("segmentation_confidence")
+            for import_key in ("pdf_import", "epub_import"):
+                import_meta = data.scaffolding_data.get(import_key) or {}
+                if isinstance(import_meta, dict):
+                    preserve_paragraphs = True
+                    source_engine = import_meta.get("source_engine")
+                    segmentation_confidence = import_meta.get("segmentation_confidence")
+                    break
 
-        if is_pdf_import:
-            # Keep paragraph boundaries produced by /pdf/upload.
-            paragraphs = _split_pdf_paragraphs(data.content)
+        if preserve_paragraphs:
+            # Keep paragraph boundaries produced by file import pipelines.
+            paragraphs = _split_imported_paragraphs(data.content)
         else:
             paragraphs = segment_text_into_paragraphs(data.content)
 

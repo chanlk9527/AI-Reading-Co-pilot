@@ -1,6 +1,48 @@
 import { useState, useMemo, useCallback } from 'react';
 
-export function useSmartText({ text, activePoints, mode, level }) {
+const FALLBACK_SENTENCE_REGEX = /[^.!?。！？\n]+[.!?。！？]+(?:["'”’)\]]+)?|[^.!?。！？\n]+$/g;
+
+function splitIntoSentences(inputText) {
+    const rawText = String(inputText || '').replace(/\r\n/g, '\n');
+    if (!rawText.trim()) return [];
+
+    const lines = rawText
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    if (lines.length === 0) return [];
+
+    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+        try {
+            const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
+            const intlSegments = lines.flatMap((line) =>
+                Array.from(segmenter.segment(line), ({ segment }) => segment.trim()).filter(Boolean)
+            );
+            if (intlSegments.length > 0) {
+                return intlSegments;
+            }
+        } catch {
+            // Fallback regex will be used.
+        }
+    }
+
+    return lines.flatMap((line) => {
+        const matches = line.match(FALLBACK_SENTENCE_REGEX);
+        if (!matches || matches.length === 0) return [line];
+        return matches.map((item) => item.trim()).filter(Boolean);
+    });
+}
+
+export function useSmartText({
+    text,
+    activePoints,
+    mode,
+    level,
+    paragraphId,
+    activeSentenceId,
+    sentenceContents = null
+}) {
     const [toggledWords, setToggledWords] = useState({});
 
     // Helper function to build the replacement HTML
@@ -47,8 +89,8 @@ export function useSmartText({ text, activePoints, mode, level }) {
         return replacement;
     }, [mode, level, toggledWords]);
 
-    const html = useMemo(() => {
-        let currentHtml = text || '';
+    const buildSmartWordHtml = useCallback((segmentText) => {
+        let currentHtml = segmentText || '';
         if (!activePoints || activePoints.length === 0) return currentHtml;
 
         const sortedKeys = [...activePoints].sort((a, b) => b.word.length - a.word.length);
@@ -126,7 +168,29 @@ export function useSmartText({ text, activePoints, mode, level }) {
         });
 
         return currentHtml;
-    }, [text, activePoints, buildReplacement]);
+    }, [activePoints, buildReplacement]);
+
+    const html = useMemo(() => {
+        const sourceText = text || '';
+        if (!sourceText) return '';
+
+        const normalizedSentenceContents = Array.isArray(sentenceContents)
+            ? sentenceContents.map((item) => String(item || '').trim()).filter(Boolean)
+            : [];
+        const segments = splitIntoSentences(sourceText);
+        const sentenceList = normalizedSentenceContents.length > 0
+            ? normalizedSentenceContents
+            : (segments.length > 0 ? segments : [sourceText]);
+        const paragraphKey = String(paragraphId);
+
+        return sentenceList.map((segment, index) => {
+            const sentenceId = `${paragraphKey}::${index}`;
+            const activeClass = String(activeSentenceId) === sentenceId ? ' active-sentence' : '';
+            const sentenceHtml = buildSmartWordHtml(segment);
+
+            return `<span class="sentence-unit${activeClass}" data-sentence-id="${sentenceId}" data-paragraph-id="${paragraphKey}" data-sentence-index="${index}">${sentenceHtml}</span>`;
+        }).join(' ');
+    }, [text, sentenceContents, paragraphId, activeSentenceId, buildSmartWordHtml]);
 
     const handleWordClick = useCallback((e) => {
         // Only active in Flow Mode Level 2

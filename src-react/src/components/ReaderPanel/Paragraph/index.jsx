@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { useSmartText } from './useSmartText';
 import { useParagraphAnalysis } from './useAnalysis';
 import AskBubble from './AskBubble';
 
 export default function Paragraph({ id, data, isActive }) {
-    const { mode, level, vocabLevel, VOCAB_MAP, bookData, setActiveId } = useApp();
+    const { mode, level, vocabLevel, VOCAB_MAP, bookData, activeSentenceId, setActiveId, setActiveSentenceId } = useApp();
     const [showTrans, setShowTrans] = useState(false);
     const [showAskBubble, setShowAskBubble] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -22,8 +22,34 @@ export default function Paragraph({ id, data, isActive }) {
         text: effectiveData.text,
         activePoints,
         mode,
-        level
+        level,
+        paragraphId: id,
+        activeSentenceId,
+        sentenceContents: effectiveData.sentences?.map((sentence) => sentence.content)
     });
+
+    const syncSentenceFromElement = useCallback((el) => {
+        if (!el) return;
+        const sentenceId = el.getAttribute('data-sentence-id');
+        if (!sentenceId || sentenceId === activeSentenceId) return;
+        setActiveSentenceId(sentenceId);
+    }, [activeSentenceId, setActiveSentenceId]);
+
+    const handleParagraphClick = useCallback(() => {
+        setActiveId(id);
+        if (isActive) setIsExpanded((prev) => !prev);
+    }, [id, isActive, setActiveId]);
+
+    const handleTextClick = useCallback((e) => {
+        handleWordClick(e);
+        syncSentenceFromElement(e.target.closest('.sentence-unit'));
+        setActiveId(id);
+        e.stopPropagation();
+    }, [handleWordClick, syncSentenceFromElement, setActiveId, id]);
+
+    const handleTextMouseOver = useCallback((e) => {
+        syncSentenceFromElement(e.target.closest('.sentence-unit'));
+    }, [syncSentenceFromElement]);
 
     // Intersection Observer for auto-trigger
     useEffect(() => {
@@ -117,15 +143,13 @@ export default function Paragraph({ id, data, isActive }) {
             ref={paragraphRef}
             className={`paragraph ${isActive ? 'active' : ''}`}
             data-id={id}
-            onClick={() => {
-                setActiveId(id);
-                if (isActive) setIsExpanded(!isExpanded);
-            }}
+            onClick={handleParagraphClick}
         >
             <div
                 className="para-text"
                 dangerouslySetInnerHTML={{ __html: html }}
-                onClick={handleWordClick}
+                onClick={handleTextClick}
+                onMouseOver={handleTextMouseOver}
             />
 
             {/* Auxiliary Content Wrapper (Translation + AI Analysis) */}

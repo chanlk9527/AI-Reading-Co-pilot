@@ -1,13 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useApp } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { SENTENCE_ANALYSIS_ENABLED, getAutoAnalysisEnabled } from '../../../services/config';
 
+const NO_INSIGHT_TEXTS = new Set(['No insight', '暂无解析']);
+const NO_TRANSLATION_TEXTS = new Set(['No translation', '暂无翻译']);
+
+const hasInsight = (insight) => Boolean(insight?.text && !NO_INSIGHT_TEXTS.has(insight.text));
+const hasTranslation = (translation) => Boolean(translation && !NO_TRANSLATION_TEXTS.has(translation));
+
+function resolveSentenceIndex(paragraphId, activeSentenceId, sentenceCount) {
+    if (sentenceCount <= 0) return null;
+    const prefix = `${String(paragraphId)}::`;
+    if (typeof activeSentenceId !== 'string' || !activeSentenceId.startsWith(prefix)) return 0;
+
+    const rawIndex = Number.parseInt(activeSentenceId.slice(prefix.length), 10);
+    if (!Number.isInteger(rawIndex) || rawIndex < 0 || rawIndex >= sentenceCount) return 0;
+    return rawIndex;
+}
+
+function buildDisplayPayload(sentence) {
+    const analysis = sentence?.analysis || {};
+    return {
+        knowledge: analysis.knowledge || [],
+        insight: analysis.insight || { tag: 'Analysis', text: 'No insight' },
+        translation: sentence?.translation || 'No translation',
+        xray: analysis.xray || null,
+        companion: analysis.companion || null
+    };
+}
+
 export function useParagraphAnalysis({ id, data, isActive, isInView }) {
-    const { updateBookData, bookData } = useApp();
+    const { updateBookData, bookData, activeSentenceId } = useApp();
     const { token } = useAuth();
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const lastSyncedSentenceIdRef = useRef(null);
 
     // Auto-analyze when active
     useEffect(() => {
@@ -17,36 +45,79 @@ export function useParagraphAnalysis({ id, data, isActive, isInView }) {
         }
 
         const currentData = { ...data, ...(bookData[id] || {}) };
+        const sentenceList = Array.isArray(currentData.sentences) ? currentData.sentences : [];
+        const activeSentenceIndex = resolveSentenceIndex(id, activeSentenceId, sentenceList.length);
+        const fallbackSentence = {
+            id,
+            content: currentData.text,
+            translation: currentData.translation,
+            analysis: {
+                knowledge: currentData.knowledge || [],
+                insight: currentData.insight || { tag: 'Analysis', text: 'No insight' },
+                xray: currentData.xray || null,
+                companion: currentData.companion || null
+            }
+        };
+        const targetSentence = sentenceList.length > 0
+            ? sentenceList[activeSentenceIndex ?? 0]
+            : fallbackSentence;
 
-        const hasKnowledge = currentData.knowledge?.length > 0;
-        const hasInsight = currentData.insight?.text && currentData.insight.text !== 'No insight' && currentData.insight.text !== '暂无解析';
-        const hasTranslation = currentData.translation && currentData.translation !== 'No translation' && currentData.translation !== '暂无翻译';
+        if (!targetSentence?.content?.trim()) return;
 
-        // STRICT CHECK: If we already have data, DO NOT run analysis.
-        if (hasKnowledge && hasInsight && hasTranslation) {
-            return;
+        const sentenceAnalysis = targetSentence.analysis || {};
+        const hasKnowledge = (sentenceAnalysis.knowledge || []).length > 0;
+        const hasInsightValue = hasInsight(sentenceAnalysis.insight);
+        const hasTranslationValue = hasTranslation(targetSentence.translation);
+        const targetSentenceId = targetSentence.id;
+
+        if (targetSentenceId != null && String(lastSyncedSentenceIdRef.current) !== String(targetSentenceId)) {
+            updateBookData(id, {
+                ...buildDisplayPayload(targetSentence),
+                sentences: sentenceList
+            });
+            lastSyncedSentenceIdRef.current = targetSentenceId;
         }
 
         // Trigger if:
         // 1. Active OR In View
         // 2. Not analyzing
         // 3. Missing data
-        const shouldAnalyze = (isActive || isInView) && !isAnalyzing && (!hasKnowledge || !hasInsight || !hasTranslation);
+        const shouldAnalyze = (isActive || isInView) && !isAnalyzing && (!hasKnowledge || !hasInsightValue || !hasTranslationValue);
 
         if (shouldAnalyze) {
-            console.log(`[Paragraph ${id}] Triggering analysis... Missing:`, { hasKnowledge, hasInsight, hasTranslation });
+            console.log(`[Paragraph ${id}] Triggering analysis for sentence ${targetSentenceId}... Missing:`, {
+                hasKnowledge,
+                hasInsight: hasInsightValue,
+                hasTranslation: hasTranslationValue
+            });
             const analyze = async () => {
                 setIsAnalyzing(true);
                 try {
                     const { aiService } = await import('../../../services/aiService');
 
-                    // Step: Content Analysis
-                    const textToAnalyze = currentData.text;
+                    // Step: analyze only the active sentence text (not the merged paragraph text).
+                    const textToAnalyze = targetSentence.content;
 
-                    console.log(`[Paragraph ${id}] Analyzing content...`);
+                    console.log(`[Paragraph ${id}] Analyzing sentence ${targetSentenceId}...`);
                     const result = await aiService.analyzeSentence(textToAnalyze);
 
-                    console.log(`[Paragraph ${id}] Analysis success.`);
+                    console.log(`[Paragraph ${id}] Sentence ${targetSentenceId} analysis success.`);
+
+                    const updatedSentences = sentenceList.length > 0
+                        ? sentenceList.map((item) => {
+                            if (String(item.id) !== String(targetSentenceId)) return item;
+                            return {
+                                ...item,
+                                translation: result.translation || item.translation || 'No translation',
+                                analysis: {
+                                    knowledge: result.knowledge || [],
+                                    insight: result.insight || { tag: 'Analysis', text: 'No insight' },
+                                    xray: result.xray || null,
+                                    companion: result.companion || null
+                                }
+                            };
+                        })
+                        : sentenceList;
 
                     // 1. Update Context
                     updateBookData(id, {
@@ -54,13 +125,17 @@ export function useParagraphAnalysis({ id, data, isActive, isInView }) {
                         insight: result.insight || { tag: 'Analysis', text: 'No insight' },
                         translation: result.translation || 'No translation',
                         xray: result.xray || null,
-                        companion: result.companion || null
+                        companion: result.companion || null,
+                        sentences: updatedSentences
                     });
+                    if (targetSentenceId != null) {
+                        lastSyncedSentenceIdRef.current = targetSentenceId;
+                    }
 
                     // 2. Persist to Backend
-                    if (token && typeof id === 'number') {
+                    if (token && typeof targetSentenceId === 'number') {
                         try {
-                            await api.updateSentence(token, id, {
+                            await api.updateSentence(token, targetSentenceId, {
                                 translation: result.translation,
                                 analysis: {
                                     knowledge: result.knowledge || [],
@@ -82,7 +157,7 @@ export function useParagraphAnalysis({ id, data, isActive, isInView }) {
             };
             analyze();
         }
-    }, [isActive, isInView, bookData, data, id, isAnalyzing, updateBookData, token]);
+    }, [isActive, isInView, activeSentenceId, bookData, data, id, isAnalyzing, updateBookData, token]);
 
     return { isAnalyzing };
 }

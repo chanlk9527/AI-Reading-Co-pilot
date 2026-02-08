@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_database
 from app.services.nlp import init_spacy
 from app.services.pdf_segmenter import get_pdf_segmenter_runtime_info
-from app.routers import auth, texts, sentences, ai, tts, pdf
+from app.routers import auth, texts, sentences, ai, tts, pdf, epub
 import logging
 
 # Configure logging
@@ -50,6 +50,7 @@ app.include_router(sentences.router)
 app.include_router(ai.router)
 app.include_router(tts.router)
 app.include_router(pdf.router)
+app.include_router(epub.router)
 
 @app.get("/")
 async def health_check():

@@ -14,7 +14,18 @@ export default function ReaderPage() {
     const ITEMS_PER_PAGE = 20;
     const { textId } = useParams();
     const { token } = useAuth();
-    const { mode, level, vocabLevel, activeId, updateBookData, setActiveId, switchMode, changeLevel, changeVocabLevel } = useApp();
+    const {
+        mode,
+        level,
+        vocabLevel,
+        activeId,
+        activeSentenceId,
+        updateBookData,
+        setActiveId,
+        switchMode,
+        changeLevel,
+        changeVocabLevel
+    } = useApp();
     const [paragraphs, setParagraphs] = useState([]);
     const [readerPage, setReaderPage] = useState(1);
     const [totalReaderPages, setTotalReaderPages] = useState(1);
@@ -42,6 +53,14 @@ export default function ReaderPage() {
                     id: sentence.id,
                     textParts: [sentence.content],
                     translationParts: sentence.translation ? [sentence.translation] : [],
+                    sentences: [{
+                        id: sentence.id,
+                        sentence_index: sentence.sentence_index,
+                        sentence_in_paragraph: sentence.sentence_in_paragraph,
+                        content: sentence.content,
+                        translation: sentence.translation || null,
+                        analysis: sentence.analysis || null
+                    }],
                     knowledge: sentence.analysis?.knowledge || [],
                     insight: sentence.analysis?.insight || { tag: '分析', text: '暂无解析' },
                     xray: sentence.analysis?.xray || null,
@@ -52,6 +71,14 @@ export default function ReaderPage() {
 
             existing.textParts.push(sentence.content);
             if (sentence.translation) existing.translationParts.push(sentence.translation);
+            existing.sentences.push({
+                id: sentence.id,
+                sentence_index: sentence.sentence_index,
+                sentence_in_paragraph: sentence.sentence_in_paragraph,
+                content: sentence.content,
+                translation: sentence.translation || null,
+                analysis: sentence.analysis || null
+            });
             if (!existing.xray && sentence.analysis?.xray) existing.xray = sentence.analysis.xray;
             if (!existing.companion && sentence.analysis?.companion) existing.companion = sentence.analysis.companion;
             if (existing.insight?.text === '暂无解析' && sentence.analysis?.insight) {
@@ -72,16 +99,22 @@ export default function ReaderPage() {
 
         return Array.from(groups.values())
             .sort((a, b) => a.paragraph_index - b.paragraph_index)
-            .map((group) => ({
-                id: group.id,
-                paragraph_index: group.paragraph_index,
-                text: group.textParts.join(' ').replace(/\s+/g, ' ').trim(),
-                translation: group.translationParts.join(' ').replace(/\s+/g, ' ').trim() || '暂无翻译',
-                knowledge: group.knowledge,
-                insight: group.insight,
-                xray: group.xray,
-                companion: group.companion
-            }));
+            .map((group) => {
+                const orderedSentences = [...group.sentences]
+                    .sort((a, b) => (a.sentence_index ?? 0) - (b.sentence_index ?? 0));
+
+                return {
+                    id: group.id,
+                    paragraph_index: group.paragraph_index,
+                    text: group.textParts.join(' ').replace(/\s+/g, ' ').trim(),
+                    translation: group.translationParts.join(' ').replace(/\s+/g, ' ').trim() || '暂无翻译',
+                    sentences: orderedSentences,
+                    knowledge: group.knowledge,
+                    insight: group.insight,
+                    xray: group.xray,
+                    companion: group.companion
+                };
+            });
     }, []);
 
     const hydrateParagraphsToBookData = useCallback((mappedParas) => {
@@ -92,10 +125,26 @@ export default function ReaderPage() {
                 insight: p.insight || { tag: '分析', text: '暂无解析' },
                 translation: p.translation || '暂无翻译',
                 xray: p.xray || null,
-                companion: p.companion || null
+                companion: p.companion || null,
+                sentences: p.sentences || []
             });
         });
     }, [updateBookData]);
+
+    const resolveSentenceForParagraph = useCallback((paragraph) => {
+        const sentenceList = Array.isArray(paragraph?.sentences) ? paragraph.sentences : [];
+        if (sentenceList.length === 0) return null;
+
+        const paragraphPrefix = `${String(paragraph.id)}::`;
+        if (typeof activeSentenceId === 'string' && activeSentenceId.startsWith(paragraphPrefix)) {
+            const rawIndex = Number.parseInt(activeSentenceId.slice(paragraphPrefix.length), 10);
+            if (Number.isInteger(rawIndex) && rawIndex >= 0 && rawIndex < sentenceList.length) {
+                return sentenceList[rawIndex];
+            }
+        }
+
+        return sentenceList[0];
+    }, [activeSentenceId]);
 
     const applySentencePayload = useCallback((items, paging) => {
         const mappedParas = buildParagraphsFromSentences(items);
@@ -269,7 +318,7 @@ export default function ReaderPage() {
     };
 
     // Re-analyze handler
-    const handleReanalyze = async (paragraphId) => {
+    const handleReanalyze = useCallback(async (paragraphId) => {
         if (!SENTENCE_ANALYSIS_ENABLED) return;
         if (!paragraphId) return;
 
@@ -278,15 +327,39 @@ export default function ReaderPage() {
         const paragraph = paragraphs.find(p => p.id == paragraphId);
         if (!paragraph) return;
 
-        console.log(`[ReaderPage] Reanalyzing paragraph ${paragraphId}...`);
+        const targetSentence = resolveSentenceForParagraph(paragraph);
+        const targetSentenceId = targetSentence?.id;
+        const textToAnalyze = targetSentence?.content || paragraph.text;
+
+        if (!textToAnalyze?.trim()) return;
+
+        console.log(
+            `[ReaderPage] Reanalyzing sentence ${targetSentenceId || 'unknown'} in paragraph ${paragraphId}...`
+        );
 
         try {
             const { aiService } = await import('../services/aiService');
 
             // Call AI for fresh analysis
-            const result = await aiService.analyzeSentence(paragraph.text);
+            const result = await aiService.analyzeSentence(textToAnalyze);
 
-            console.log(`[ReaderPage] Reanalysis complete for paragraph ${paragraphId}`);
+            console.log(`[ReaderPage] Reanalysis complete for sentence ${targetSentenceId || 'unknown'}`);
+
+            const updatedSentences = Array.isArray(paragraph.sentences)
+                ? paragraph.sentences.map((sentence) => {
+                    if (String(sentence.id) !== String(targetSentenceId)) return sentence;
+                    return {
+                        ...sentence,
+                        translation: result.translation || sentence.translation || 'No translation',
+                        analysis: {
+                            knowledge: result.knowledge || [],
+                            insight: result.insight || { tag: 'Analysis', text: 'No insight' },
+                            xray: result.xray || null,
+                            companion: result.companion || null
+                        }
+                    };
+                })
+                : paragraph.sentences;
 
             // 1. Update Context 
             updateBookData(paragraphId, {
@@ -294,13 +367,14 @@ export default function ReaderPage() {
                 insight: result.insight || { tag: 'Analysis', text: 'No insight' },
                 translation: result.translation || 'No translation',
                 xray: result.xray || null,
-                companion: result.companion || null
+                companion: result.companion || null,
+                sentences: updatedSentences || []
             });
 
             // 2. Persist to Backend (if using real backend)
-            if (token && typeof paragraphId === 'number') {
+            if (token && typeof targetSentenceId === 'number') {
                 try {
-                    await api.updateSentence(token, paragraphId, {
+                    await api.updateSentence(token, targetSentenceId, {
                         translation: result.translation,
                         analysis: {
                             knowledge: result.knowledge || [],
@@ -319,7 +393,7 @@ export default function ReaderPage() {
             console.error(`[ReaderPage] Reanalysis failed:`, err);
             throw err; // Re-throw for CopilotPanel to handle
         }
-    };
+    }, [paragraphs, resolveSentenceForParagraph, token, updateBookData]);
 
     // Split functionality removed (Backend Spacy Import)
 

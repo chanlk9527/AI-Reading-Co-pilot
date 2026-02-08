@@ -217,5 +217,40 @@ export const api = {
             throw err;
         }
         return response.json();
+    },
+
+    async uploadEpub(token, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/epub/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (!response.ok) {
+            let errorPayload = {};
+            try {
+                errorPayload = await response.json();
+            } catch {
+                errorPayload = {};
+            }
+
+            const detail = errorPayload?.detail;
+            let message = 'EPUB upload failed';
+            if (typeof detail === 'string') {
+                message = detail;
+            } else if (detail && typeof detail === 'object') {
+                message = detail.message || detail.code || message;
+            }
+
+            const err = new Error(message);
+            if (detail && typeof detail === 'object') {
+                err.detail = detail;
+            }
+            throw err;
+        }
+        return response.json();
     }
 };
