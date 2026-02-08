@@ -15,8 +15,22 @@ export const AI_CONFIG = {
     }
 };
 
+const parsePositiveInt = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number.parseInt(String(value), 10);
+    return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+const parseBoolean = (value) => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+    return null;
+};
+
 // Toggle sentence-level analysis (auto-analysis + reanalyze button).
-// Default is OFF to avoid unnecessary credit consumption during segmentation tests.
+// Default is ON; can still be overridden by localStorage/env for testing.
 export const SENTENCE_ANALYSIS_ENABLED = (() => {
     const localOverride = localStorage.getItem('ENABLE_SENTENCE_ANALYSIS');
     if (localOverride !== null) {
@@ -28,5 +42,44 @@ export const SENTENCE_ANALYSIS_ENABLED = (() => {
         return envValue.toLowerCase() === 'true';
     }
 
-    return false;
+    return true;
+})();
+
+export const AUTO_ANALYSIS_STORAGE_KEY = 'ENABLE_AUTO_ANALYSIS';
+
+export const getAutoAnalysisEnabled = () => {
+    const localOverride = parseBoolean(localStorage.getItem(AUTO_ANALYSIS_STORAGE_KEY));
+    if (localOverride !== null) return localOverride;
+
+    const envValue = parseBoolean(import.meta.env.VITE_ENABLE_AUTO_ANALYSIS);
+    if (envValue !== null) return envValue;
+
+    // Backward-compatible fallback to the old global sentence analysis switch.
+    return SENTENCE_ANALYSIS_ENABLED;
+};
+
+export const setAutoAnalysisEnabled = (enabled) => {
+    localStorage.setItem(AUTO_ANALYSIS_STORAGE_KEY, String(Boolean(enabled)));
+};
+
+// Global safeguard for analysis requests.
+// Meaning: at most M analysis requests in N seconds.
+export const ANALYSIS_RATE_LIMIT_WINDOW_SECONDS = (() => {
+    const localOverride = parsePositiveInt(localStorage.getItem('ANALYSIS_RATE_LIMIT_WINDOW_SECONDS'));
+    if (localOverride !== null) return localOverride;
+
+    const envValue = parsePositiveInt(import.meta.env.VITE_ANALYSIS_RATE_LIMIT_WINDOW_SECONDS);
+    if (envValue !== null) return envValue;
+
+    return 20;
+})();
+
+export const ANALYSIS_RATE_LIMIT_MAX_REQUESTS = (() => {
+    const localOverride = parsePositiveInt(localStorage.getItem('ANALYSIS_RATE_LIMIT_MAX_REQUESTS'));
+    if (localOverride !== null) return localOverride;
+
+    const envValue = parsePositiveInt(import.meta.env.VITE_ANALYSIS_RATE_LIMIT_MAX_REQUESTS);
+    if (envValue !== null) return envValue;
+
+    return 6;
 })();

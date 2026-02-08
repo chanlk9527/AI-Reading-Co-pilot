@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { getAutoAnalysisEnabled, setAutoAnalysisEnabled } from '../services/config';
 import { useNavigate } from 'react-router-dom';
 
 export default function LibraryPage() {
@@ -17,6 +18,7 @@ export default function LibraryPage() {
     const [importFile, setImportFile] = useState(null);
     const [pdfStartPage, setPdfStartPage] = useState('');
     const [pdfEndPage, setPdfEndPage] = useState('');
+    const [autoAnalysisEnabled, setAutoAnalysisEnabledState] = useState(() => getAutoAnalysisEnabled());
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -141,6 +143,12 @@ export default function LibraryPage() {
         } catch (err) {
             alert("删除失败: " + err.message);
         }
+    };
+
+    const handleAutoAnalysisToggle = (e) => {
+        const next = e.target.checked;
+        setAutoAnalysisEnabled(next);
+        setAutoAnalysisEnabledState(next);
     };
 
     return (
@@ -643,6 +651,43 @@ export default function LibraryPage() {
                                 📥 导入文章
                             </button>
                         </div>
+                    </div>
+
+                    <div style={{
+                        marginBottom: 20,
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 16,
+                        flexWrap: 'wrap'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
+                                🧪 开发开关：自动分析
+                            </div>
+                            <div style={{ fontSize: '0.86rem', color: '#b45309' }}>
+                                关闭后阅读页不会自动触发 AI 分析，可减少测试阶段 token 消耗（手动“重新分析”仍可用）。
+                            </div>
+                        </div>
+                        <label style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            cursor: 'pointer',
+                            color: '#78350f',
+                            fontWeight: 600
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={autoAnalysisEnabled}
+                                onChange={handleAutoAnalysisToggle}
+                            />
+                            {autoAnalysisEnabled ? '已开启' : '已关闭'}
+                        </label>
                     </div>
 
                     {loading ? (

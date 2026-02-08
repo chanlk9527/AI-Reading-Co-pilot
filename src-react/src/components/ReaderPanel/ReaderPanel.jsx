@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import Paragraph from './Paragraph';
 
@@ -11,13 +11,15 @@ export default function ReaderPanel({
     onPageChange = null,
     pageLoading = false
 }) {
-    const { activeId, setActiveId } = useApp();
+    const { mode, activeId, setActiveId } = useApp();
     const containerRef = useRef(null);
     const [localPage, setLocalPage] = useState(1);
-    const [inputPage, setInputPage] = useState(1);
     const [markerStyle, setMarkerStyle] = useState({ top: 0, height: 0, opacity: 0 });
+    const [flowPaginationVisible, setFlowPaginationVisible] = useState(true);
     const isScrollingRef = useRef(false);
     const scrollTimeoutRef = useRef(null);
+    const flowPaginationTimerRef = useRef(null);
+    const paginationHoverRef = useRef(false);
 
     const isServerPaging = typeof onPageChange === 'function';
     const safeServerPage = Number.isInteger(page) ? Math.max(1, page) : 1;
@@ -26,11 +28,6 @@ export default function ReaderPanel({
     const currentTotalPages = isServerPaging
         ? safeServerTotalPages
         : Math.max(1, Math.ceil(paragraphs.length / ITEMS_PER_PAGE));
-
-    // Sync input when page changes
-    useEffect(() => {
-        setInputPage(currentPage);
-    }, [currentPage]);
 
     // Calculate visible paragraphs
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -143,19 +140,62 @@ export default function ReaderPanel({
     const goPrev = () => goToPage(currentPage - 1);
     const goNext = () => goToPage(currentPage + 1);
 
-    const handlePageSubmit = (e) => {
-        if (e?.preventDefault) e.preventDefault();
-        const parsed = parseInt(inputPage, 10);
-        if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= currentTotalPages) {
-            goToPage(parsed);
-        } else {
-            setInputPage(currentPage);
+    const clearFlowPaginationTimer = useCallback(() => {
+        if (flowPaginationTimerRef.current) {
+            clearTimeout(flowPaginationTimerRef.current);
+            flowPaginationTimerRef.current = null;
         }
-    };
+    }, []);
+
+    const scheduleFlowPaginationHide = useCallback((delayMs = 1200) => {
+        if (mode !== 'flow') return;
+        clearFlowPaginationTimer();
+        flowPaginationTimerRef.current = setTimeout(() => {
+            if (!paginationHoverRef.current) {
+                setFlowPaginationVisible(false);
+            }
+        }, delayMs);
+    }, [mode, clearFlowPaginationTimer]);
+
+    useEffect(() => {
+        if (mode !== 'flow') {
+            clearFlowPaginationTimer();
+            setFlowPaginationVisible(true);
+            return;
+        }
+
+        const isCoarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches;
+        if (isCoarsePointer) {
+            clearFlowPaginationTimer();
+            setFlowPaginationVisible(true);
+            return;
+        }
+
+        setFlowPaginationVisible(false);
+
+        const handleMouseMove = (event) => {
+            const nearBottom = event.clientY >= window.innerHeight - 120;
+            if (!nearBottom) return;
+            setFlowPaginationVisible(true);
+            scheduleFlowPaginationHide(1000);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove, { passive: true });
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            clearFlowPaginationTimer();
+            paginationHoverRef.current = false;
+        };
+    }, [mode, scheduleFlowPaginationHide, clearFlowPaginationTimer]);
+
+    useEffect(() => {
+        return () => clearFlowPaginationTimer();
+    }, [clearFlowPaginationTimer]);
 
     const showPagination = currentTotalPages > 1;
     const prevDisabled = pageLoading || currentPage <= 1;
     const nextDisabled = pageLoading || currentPage >= currentTotalPages;
+    const paginationVisible = mode !== 'flow' || flowPaginationVisible;
 
     return (
         <div
@@ -208,72 +248,42 @@ export default function ReaderPanel({
             </div>
 
             {showPagination && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'var(--bg-paper, #fff)',
-                    border: '1px solid var(--border-color, #ccc)',
-                    borderRadius: '50px',
-                    padding: '10px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    zIndex: 100
-                }}>
+                <div
+                    className={`reader-pagination ${paginationVisible ? 'is-visible' : 'is-hidden'}`}
+                    onMouseEnter={() => {
+                        paginationHoverRef.current = true;
+                        if (mode === 'flow') {
+                            setFlowPaginationVisible(true);
+                            clearFlowPaginationTimer();
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        paginationHoverRef.current = false;
+                        if (mode === 'flow') {
+                            scheduleFlowPaginationHide(180);
+                        }
+                    }}
+                >
                     <button
                         onClick={goPrev}
                         disabled={prevDisabled}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            border: 'none',
-                            background: prevDisabled ? '#eee' : 'var(--theme-primary, #007bff)',
-                            color: prevDisabled ? '#999' : '#fff',
-                            cursor: prevDisabled ? 'default' : 'pointer'
-                        }}
+                        className="reader-pagination-btn"
+                        aria-label="Previous page"
                     >
-                        Prev
+                        &#8592;
                     </button>
 
-                    <form
-                        onSubmit={handlePageSubmit}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                        <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>Page</span>
-                        <input
-                            type="number"
-                            value={inputPage}
-                            onChange={(e) => setInputPage(e.target.value)}
-                            onBlur={handlePageSubmit}
-                            disabled={pageLoading}
-                            style={{
-                                width: '50px',
-                                textAlign: 'center',
-                                padding: '4px',
-                                borderRadius: '4px',
-                                border: '1px solid #ddd',
-                                fontSize: '0.9rem'
-                            }}
-                        />
-                        <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>of {currentTotalPages}</span>
-                    </form>
+                    <span className="reader-pagination-text">
+                        {currentPage} / {currentTotalPages}
+                    </span>
 
                     <button
                         onClick={goNext}
                         disabled={nextDisabled}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            border: 'none',
-                            background: nextDisabled ? '#eee' : 'var(--theme-primary, #007bff)',
-                            color: nextDisabled ? '#999' : '#fff',
-                            cursor: nextDisabled ? 'default' : 'pointer'
-                        }}
+                        className="reader-pagination-btn"
+                        aria-label="Next page"
                     >
-                        Next
+                        &#8594;
                     </button>
                 </div>
             )}

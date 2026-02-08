@@ -113,7 +113,7 @@ export default function CopilotPanel({ onReanalyze, sentenceAnalysisEnabled = tr
                         className="btn-reanalyze-global"
                         onClick={handleReanalyze}
                         disabled={isReanalyzing || !sentenceAnalysisEnabled}
-                        title={sentenceAnalysisEnabled ? "重新分析整个段落（词汇+翻译+结构）" : "句子分析已临时关闭"}
+                        title={sentenceAnalysisEnabled ? "重新分析当前句子（词汇+翻译+结构）" : "句子分析已临时关闭"}
                     >
                         {sentenceAnalysisEnabled
                             ? (isReanalyzing ? '⏳ 分析中...' : '🔄 重新分析')

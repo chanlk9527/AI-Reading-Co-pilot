@@ -19,6 +19,7 @@ export function AppProvider({ children }) {
     const [level, setLevel] = useState(2);     // Scaffolding Level (1-3)
     const [vocabLevel, setVocabLevel] = useState('A2'); // Vocabulary Proficiency
     const [activeId, setActiveId] = useState(null);
+    const [activeSentenceId, setActiveSentenceId] = useState(null);
     const [revealedKeys, setRevealedKeys] = useState([]);
     const [bookData, setBookData] = useState({});
 
@@ -43,7 +44,10 @@ export function AppProvider({ children }) {
     const updateBookData = useCallback((id, data) => {
         setBookData(prev => ({
             ...prev,
-            [id]: data
+            [id]: {
+                ...(prev[id] || {}),
+                ...(data || {})
+            }
         }));
     }, []);
 
@@ -57,6 +61,7 @@ export function AppProvider({ children }) {
         level,
         vocabLevel,
         activeId,
+        activeSentenceId,
         revealedKeys,
         bookData,
 
@@ -69,6 +74,7 @@ export function AppProvider({ children }) {
         changeLevel,
         changeVocabLevel,
         setActiveId,
+        setActiveSentenceId,
         revealKey,
         updateBookData,
         clearBookData

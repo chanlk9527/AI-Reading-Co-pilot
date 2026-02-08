@@ -1,7 +1,67 @@
-import { AI_CONFIG } from './config.js';
+import {
+    AI_CONFIG,
+    ANALYSIS_RATE_LIMIT_WINDOW_SECONDS,
+    ANALYSIS_RATE_LIMIT_MAX_REQUESTS
+} from './config.js';
 import { PROMPTS } from './prompts.js';
 
 const API_BASE_URL = 'http://localhost:8000';
+const analysisRequestTimestamps = [];
+
+const buildApiError = async (response, fallbackMessage = 'AI request failed') => {
+    let payload = null;
+    let message = fallbackMessage;
+
+    try {
+        payload = await response.json();
+        if (typeof payload?.detail === 'string' && payload.detail.trim()) {
+            message = payload.detail;
+        } else if (payload?.detail && typeof payload.detail === 'object') {
+            message = payload.detail.message || payload.detail.code || fallbackMessage;
+        }
+    } catch {
+        try {
+            const text = await response.text();
+            if (text && text.trim()) message = text.trim();
+        } catch {
+            // ignore parse errors
+        }
+    }
+
+    const err = new Error(message);
+    err.status = response.status;
+    if (payload !== null) err.payload = payload;
+    if (payload?.detail !== undefined) err.detail = payload.detail;
+    return err;
+};
+
+const pruneAnalysisWindow = (now) => {
+    const windowMs = ANALYSIS_RATE_LIMIT_WINDOW_SECONDS * 1000;
+    while (analysisRequestTimestamps.length > 0 && (now - analysisRequestTimestamps[0]) >= windowMs) {
+        analysisRequestTimestamps.shift();
+    }
+};
+
+const consumeAnalysisSlot = () => {
+    const now = Date.now();
+    pruneAnalysisWindow(now);
+
+    if (analysisRequestTimestamps.length >= ANALYSIS_RATE_LIMIT_MAX_REQUESTS) {
+        const windowMs = ANALYSIS_RATE_LIMIT_WINDOW_SECONDS * 1000;
+        const oldest = analysisRequestTimestamps[0];
+        const retryAfterMs = Math.max(0, windowMs - (now - oldest));
+        const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+        const err = new Error(
+            `Analysis rate limited: max ${ANALYSIS_RATE_LIMIT_MAX_REQUESTS} requests in `
+            + `${ANALYSIS_RATE_LIMIT_WINDOW_SECONDS}s. Retry in ~${retryAfterSeconds}s.`
+        );
+        err.code = 'ANALYSIS_RATE_LIMITED';
+        err.retryAfterSeconds = retryAfterSeconds;
+        throw err;
+    }
+
+    analysisRequestTimestamps.push(now);
+};
 
 /**
  * Unified AI Service - uses backend proxy with streaming support
@@ -22,7 +82,7 @@ class AIService {
      * @param {function} onChunk - Callback for each chunk received
      * @returns {Promise<string>} Full response text
      */
-    async chatStream(systemPrompt, userQuery, onChunk) {
+    async chatStream(systemPrompt, userQuery, onChunk, requestType = 'chat') {
         const token = this.getToken();
         const headers = {
             'Content-Type': 'application/json'
@@ -38,13 +98,13 @@ class AIService {
                 system_prompt: systemPrompt,
                 user_query: userQuery,
                 provider: this.config.provider,
-                api_key: this.config[this.config.provider]?.apiKey || null
+                api_key: this.config[this.config.provider]?.apiKey || null,
+                request_type: requestType
             })
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'AI request failed');
+            throw await buildApiError(response, 'AI request failed');
         }
 
         const reader = response.body.getReader();
@@ -88,7 +148,7 @@ class AIService {
     /**
      * Non-streaming chat (for backward compatibility)
      */
-    async chat(systemPrompt, userQuery) {
+    async chat(systemPrompt, userQuery, requestType = 'chat') {
         const token = this.getToken();
         const headers = {
             'Content-Type': 'application/json'
@@ -104,13 +164,13 @@ class AIService {
                 system_prompt: systemPrompt,
                 user_query: userQuery,
                 provider: this.config.provider,
-                api_key: this.config[this.config.provider]?.apiKey || null
+                api_key: this.config[this.config.provider]?.apiKey || null,
+                request_type: requestType
             })
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'AI request failed');
+            throw await buildApiError(response, 'AI request failed');
         }
 
         const data = await response.json();
@@ -123,10 +183,11 @@ class AIService {
      * Analyze text for Reading Coach (Smart Import).
      */
     async analyzeText(rawText) {
+        consumeAnalysisSlot();
         const systemPrompt = PROMPTS.ANALYSIS.SYSTEM;
 
         // Use non-streaming for JSON parsing
-        const responseText = await this.chat(systemPrompt, rawText);
+        const responseText = await this.chat(systemPrompt, rawText, 'analysis');
         console.log("Raw AI Response:", responseText);
 
         let jsonStr = responseText;
@@ -159,8 +220,9 @@ class AIService {
      * Analyze a single sentence/paragraph (content analysis).
      */
     async analyzeSentence(rawText) {
+        consumeAnalysisSlot();
         const systemPrompt = PROMPTS.ANALYSIS.SYSTEM;
-        const responseText = await this.chat(systemPrompt, rawText);
+        const responseText = await this.chat(systemPrompt, rawText, 'analysis');
 
         let jsonStr = responseText;
         const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);

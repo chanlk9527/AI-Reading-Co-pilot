@@ -32,8 +32,8 @@
 
 /* Paragraph Container */
 .paragraph {
-    margin-bottom: 56px;
-    /* Increased separation */
+    margin-bottom: 48px;
+    /* Slightly tighter spacing for reading continuity */
     position: relative;
     transition: opacity 0.4s;
     padding: 10px 15px;
@@ -58,10 +58,30 @@
     font-weight: 400;
 }
 
+.sentence-unit {
+    display: inline;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sentence-unit:hover {
+    background: rgba(0, 0, 0, 0.035);
+}
+
+.sentence-unit.active-sentence {
+    background: rgba(212, 175, 55, 0.18);
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.28);
+}
+
 .paragraph.active .para-text {
     color: #000;
     font-weight: 500;
     /* Slightly bolder */
+}
+
+body.mode-learn .sentence-unit.active-sentence {
+    background: rgba(41, 128, 185, 0.18);
+    box-shadow: 0 0 0 1px rgba(41, 128, 185, 0.3);
 }
 
 /* Enhanced Active State */
@@ -458,6 +478,136 @@ body.mode-learn .ask-bubble {
     font-style: italic;
     margin-left: 10px;
     animation: pulse 1s infinite;
+}
+
+/* ================= Pagination ================= */
+.reader-pagination {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%) translateY(0);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(8px);
+    opacity: 1;
+    transition: opacity 0.24s ease, transform 0.24s ease;
+    z-index: 100;
+}
+
+.reader-pagination-hint {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%) translateY(4px);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: rgba(71, 85, 105, 0.56);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.reader-pagination-hint.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.reader-pagination.is-hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px);
+    pointer-events: none;
+}
+
+.reader-pagination-btn {
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 1.06rem;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.reader-pagination-btn:hover:not(:disabled) {
+    color: #0f172a;
+    background-color: rgba(15, 23, 42, 0.06);
+}
+
+.reader-pagination-btn:disabled {
+    color: #cbd5e1;
+    cursor: default;
+    opacity: 0.7;
+}
+
+.reader-pagination-text {
+    min-width: 88px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+}
+
+.reader-pagination-jump {
+    margin: 0;
+}
+
+.reader-pagination-input {
+    border: none;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    color: #0f172a;
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    padding: 0;
+    line-height: 1.2;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.reader-pagination-input:focus {
+    outline: none;
+    border-bottom-color: rgba(15, 23, 42, 0.35);
+}
+
+.reader-pagination-input:disabled {
+    color: #94a3b8;
+}
+
+.reader-pagination-sep,
+.reader-pagination-total {
+    color: #64748b;
+}
+
+body.mode-flow .reader-pagination {
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 768px) {
+    .reader-pagination {
+        bottom: 12px;
+        gap: 10px;
+        padding: 7px 10px;
+    }
+
+    .reader-pagination-text {
+        min-width: 72px;
+        font-size: 0.82rem;
+    }
 }
 
 /* ================= AI Companion (Collapsible) ================= */
