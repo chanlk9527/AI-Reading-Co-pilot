@@ -4,9 +4,9 @@ from fastapi.responses import FileResponse, HTMLResponse
 from app.database import get_db
 from app.models.content import TextCreate, TextUpdate, TextResponse, TextProgressUpdate
 from app.routers.auth import get_current_user
-from app.services.epub_segmenter import build_epub_reader_html
 from app.services.nlp import sentencize
 from app.services.raw_asset_store import resolve_raw_asset_path
+from app.services.epub_segmenter import build_epub_reader_html
 from app.services.text_segmenter import segment_text_into_paragraphs
 import logging
 import json
@@ -36,6 +36,28 @@ def _extract_raw_asset(scaffolding_data: Optional[dict]) -> Optional[dict]:
             return raw_asset
 
     return None
+
+
+def _load_text_scaffolding_data(text_id: int, user_id: int) -> Optional[dict]:
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT scaffolding_data FROM texts WHERE id = ? AND user_id = ?",
+            (text_id, user_id)
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Text not found")
+
+        scaffolding_data = None
+        scaffolding_json = row["scaffolding_data"]
+        if scaffolding_json:
+            try:
+                scaffolding_data = json.loads(scaffolding_json)
+            except Exception:
+                logger.warning("Failed to parse scaffolding_data for text %s", text_id)
+                scaffolding_data = None
+        return scaffolding_data
 
 @router.get("", response_model=List[TextResponse])
 async def list_texts(user = Depends(get_current_user)):
@@ -196,50 +218,49 @@ async def get_text(text_id: int, user = Depends(get_current_user)):
 
 @router.get("/{text_id}/raw-asset")
 async def get_text_raw_asset(text_id: int, user = Depends(get_current_user)):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT scaffolding_data FROM texts WHERE id = ? AND user_id = ?",
-            (text_id, user["id"])
-        )
-        row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Text not found")
-
-        scaffolding_data = None
-        scaffolding_json = row["scaffolding_data"]
-        if scaffolding_json:
-            try:
-                scaffolding_data = json.loads(scaffolding_json)
-            except Exception:
-                logger.warning("Failed to parse scaffolding_data for text %s", text_id)
-                scaffolding_data = None
+    scaffolding_data = _load_text_scaffolding_data(text_id, user["id"])
 
     raw_asset = _extract_raw_asset(scaffolding_data)
     if not raw_asset:
         raise HTTPException(status_code=404, detail="Raw asset not found")
 
     relative_path = str(raw_asset.get("relative_path") or "").strip()
-    asset_format = str(raw_asset.get("format") or "").lower()
     mime_type = str(raw_asset.get("mime_type") or "").strip()
 
     asset_path = resolve_raw_asset_path(relative_path, expected_user_id=user["id"])
     if not asset_path:
         raise HTTPException(status_code=404, detail="Raw asset file missing")
 
-    if asset_format == "epub":
-        try:
-            epub_bytes = asset_path.read_bytes()
-            reader_html = build_epub_reader_html(epub_bytes)
-        except Exception as exc:
-            logger.error("Failed to render raw EPUB view for text %s: %s", text_id, exc)
-            raise HTTPException(status_code=500, detail="Failed to render EPUB raw view") from exc
-        return HTMLResponse(content=reader_html, media_type="text/html")
-
     return FileResponse(
         path=str(asset_path),
         media_type=mime_type or "application/octet-stream",
     )
+
+
+@router.get("/{text_id}/raw-asset/epub-html")
+async def get_text_epub_raw_html(text_id: int, user = Depends(get_current_user)):
+    scaffolding_data = _load_text_scaffolding_data(text_id, user["id"])
+
+    raw_asset = _extract_raw_asset(scaffolding_data)
+    if not raw_asset:
+        raise HTTPException(status_code=404, detail="Raw asset not found")
+
+    asset_format = str(raw_asset.get("format") or "").strip().lower()
+    if asset_format != "epub":
+        raise HTTPException(status_code=400, detail="Raw asset is not EPUB")
+
+    relative_path = str(raw_asset.get("relative_path") or "").strip()
+    asset_path = resolve_raw_asset_path(relative_path, expected_user_id=user["id"])
+    if not asset_path:
+        raise HTTPException(status_code=404, detail="Raw asset file missing")
+
+    try:
+        html_doc = build_epub_reader_html(asset_path.read_bytes())
+    except Exception as exc:
+        logger.error("Failed to build EPUB fallback HTML for text %s: %s", text_id, exc)
+        raise HTTPException(status_code=400, detail="EPUB fallback rendering failed") from exc
+
+    return HTMLResponse(content=html_doc)
 
 
 @router.put("/{text_id}", response_model=TextResponse)

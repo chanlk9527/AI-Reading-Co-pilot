@@ -331,7 +331,7 @@ export default function ReaderPage() {
         setActiveId
     ]);
 
-    // Fetch raw asset as Blob URL for embedded reader.
+    // Fetch raw asset as Blob URL for formats that can be directly embedded (e.g. PDF).
     useEffect(() => {
         let cancelled = false;
 
@@ -354,6 +354,14 @@ export default function ReaderPage() {
             clearRawUrl();
             setRawAssetLoading(false);
             setRawAssetError('当前文本没有可用的 Raw EPUB/PDF 资源');
+            return;
+        }
+
+        const rawAssetFormat = String(rawAssetInfo?.format || '').toLowerCase();
+        if (rawAssetFormat === 'epub') {
+            clearRawUrl();
+            setRawAssetLoading(false);
+            setRawAssetError('');
             return;
         }
 
@@ -572,6 +580,8 @@ export default function ReaderPage() {
                         title={textTitle}
                         rawAssetUrl={rawAssetUrl}
                         rawAssetInfo={rawAssetInfo}
+                        textId={textId}
+                        token={token}
                         loading={rawAssetLoading}
                         error={rawAssetError}
                     />

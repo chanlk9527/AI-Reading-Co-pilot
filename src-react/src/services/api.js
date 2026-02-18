@@ -172,6 +172,14 @@ export const api = {
         };
     },
 
+    async getRawEpubFallbackHtml(token, textId) {
+        const response = await fetch(`${API_BASE_URL}/texts/${textId}/raw-asset/epub-html`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch EPUB fallback HTML');
+        return response.text();
+    },
+
     async getCredits(token) {
         const response = await fetch(`${API_BASE_URL}/ai/credits`, {
             headers: { 'Authorization': `Bearer ${token}` }

@@ -1,13 +1,19 @@
+import EpubRawReader from './EpubRawReader';
+
 export default function RawReaderPanel({
     title,
     rawAssetUrl,
     rawAssetInfo,
+    textId,
+    token,
     loading = false,
     error = ''
 }) {
     const format = String(rawAssetInfo?.format || '').toLowerCase();
     const formatLabel = format ? format.toUpperCase() : 'RAW';
     const sourceName = rawAssetInfo?.filename || '';
+    const isEpub = format === 'epub';
+    const needsBlobPreview = !isEpub;
 
     return (
         <div className="reader-panel raw-reader-panel">
@@ -35,16 +41,24 @@ export default function RawReaderPanel({
                         </div>
                     ) : null}
 
-                    {!loading && !error && rawAssetInfo && !rawAssetUrl ? (
+                    {!loading && !error && rawAssetInfo && needsBlobPreview && !rawAssetUrl ? (
                         <div className="raw-reader-status">Raw 资源已找到，但无法创建预览。</div>
                     ) : null}
 
-                    {!loading && !error && rawAssetInfo && rawAssetUrl ? (
-                        <iframe
-                            className="raw-reader-frame"
-                            src={rawAssetUrl}
-                            title={`${title || 'Raw Reader'} frame`}
-                        />
+                    {!loading && !error && rawAssetInfo && (isEpub || rawAssetUrl) ? (
+                        isEpub ? (
+                            <EpubRawReader
+                                title={title}
+                                textId={textId}
+                                token={token}
+                            />
+                        ) : (
+                            <iframe
+                                className="raw-reader-frame"
+                                src={rawAssetUrl}
+                                title={`${title || 'Raw Reader'} frame`}
+                            />
+                        )
                     ) : null}
                 </div>
             </div>
